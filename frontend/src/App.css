@@ -1,0 +1,68 @@
+:root{
+  --clr-light: #fafafa;
+  --clr-main: #961D48;
+  --clr-secondary: #A07F58;
+  --clr-dark: #4F4E4D;
+  --clr-creme: #BFA583;
+  --clr-gray: #e5e5e5;
+}
+
+/* main rgb(150, 29, 72)
+ */
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  line-height: calc(1em + 0.5rem);
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'General Sans', sans-serif;
+  background-color: var(--clr-light);
+  color: var(--clr-dark);
+}
+
+img,
+svg,
+picture,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+  user-select: none;
+}
+
+button{
+  display: inline-block;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+h1{
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--clr-main);
+  margin-bottom: 1rem;
+}
+
+input{
+  border: none;
+  outline: none;
+  padding: 0.5rem;
+  border-radius: 5px;
+  width: 100%;
+  margin-bottom: 1rem;
+}
