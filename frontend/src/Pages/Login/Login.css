@@ -3,7 +3,10 @@
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: var(--clr-main);
+  background-image: url("../../assets/backgrounds/blob-scene-haikei.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .login__container {
@@ -31,6 +34,8 @@
     background-color: var(--clr-gray);
     letter-spacing: 0.03rem;
     color: var(--clr-secondary);
+    margin-bottom: 1rem;
+
 }
 
 .login__btn{
@@ -59,6 +64,11 @@
 
 .login__logo{
     margin-bottom: 1.5rem;
+}
+
+.login__title{
+   
+    color: var(--clr-main);
 }
 
 

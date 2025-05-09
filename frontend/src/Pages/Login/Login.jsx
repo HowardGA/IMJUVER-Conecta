@@ -14,7 +14,7 @@ const Login = () => {
         <div className="login__page ">
             <div className='login__container container'>
                 <img src={Logo} alt="Logo" className='login__logo'/>
-                <h1>Iniciar Sesión</h1>
+                <h1 className='login__title'>Iniciar Sesión</h1>
                 <section className='login__form'>
                     <form>
                         <div className='login__input'>

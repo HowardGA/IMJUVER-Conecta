@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import '../Utils.css';
 import './Header.css';
 import './Mobile-nav.css';
-import Logo from '../assets/logo.png';
+import Logo from '../assets/logo-white.png';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -18,6 +18,11 @@ const Header = () => {
         navigate('/login');
     }
 
+    const menuNavigate = (path) => {
+        navigate(path);
+    }
+  
+
     return (
         <>
         <header className="header container">
@@ -27,19 +32,19 @@ const Header = () => {
             <ul className="header__menu">
                 <li></li>
                 <li>
-                    <a href="/" className="header__link">Cursos</a>
+                    <a className="header__link" onClick={() => {menuNavigate("courses")}}>Cursos</a>
                 </li>
                 <li>
-                    <a href="/contact" className="header__link">Bolsa de Trabajo</a>
+                    <a className="header__link">Bolsa de Trabajo</a>
                 </li>
                 <li>
-                    <a href="/contact" className="header__link">Directorio</a>
+                    <a className="header__link">Directorio</a>
                 </li>
                 <li>
-                    <a href="/contact" className="header__link">Propuestas</a>
+                    <a className="header__link">Propuestas</a>
                 </li>
                 <li>
-                    <a href="/contact" className="header__link">Foro</a>
+                    <a className="header__link">Foro</a>
                 </li>
                 <li>
                     <button className='btn' onClick={navigateToLogin}>Acceder</button>

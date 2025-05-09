@@ -61,7 +61,7 @@
   }
 
   .btn:hover {
-    background-color: var(--clr-main);
+    background-color: var(--clr-darker);
   }
 
   .link {
@@ -77,4 +77,36 @@
 
   .centerText {
     text-align: center;
+  }
+
+  .searchBtn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    letter-spacing: 0.01rem;
+    background-color: var(--clr-green);
+    color: var(--clr-light);
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    border-radius: 6px;
+  }
+
+  .searchBtn:hover {
+    background-color: var(--clr-darkerGreen);
+  }
+
+  .required {
+    color: var(--clr-error);
+    display: inline-block;
+  }
+  .required::after {
+    content: " *";
+  }
+
+  .error-message {
+    color: var(--clr-error);
+    font-size: 0.8rem;
+    display: block;
+    margin-top: -0.5rem;
+    margin-bottom: 0.8rem;
   }

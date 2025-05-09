@@ -5,6 +5,12 @@
   --clr-dark: #4F4E4D;
   --clr-creme: #BFA583;
   --clr-gray: #e5e5e5;
+  --clr-darker: #3f0000;
+  --clr-pink: #e46889;
+  --clr-green: #00957c;
+  --clr-darkerGreen: #00614b;
+  --clr-red: #a10721;
+  --clr-error: #C5172E;
 }
 
 /* main rgb(150, 29, 72)
@@ -28,7 +34,7 @@ html {
 
 body {
   font-family: 'General Sans', sans-serif;
-  background-color: var(--clr-light);
+  background-color: var(--clr-main);
   color: var(--clr-dark);
 }
 
@@ -54,7 +60,7 @@ button{
 h1{
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--clr-main);
+  color: var(--clr-light);
   margin-bottom: 1rem;
 }
 
@@ -64,5 +70,24 @@ input{
   padding: 0.5rem;
   border-radius: 5px;
   width: 100%;
-  margin-bottom: 1rem;
+  background-color: var(--clr-light);
 }
+
+select {
+  border: none;
+  outline: none;
+  padding: 0.5rem;
+  border-radius: 5px;
+  width: 30%;
+  background-color: var(--clr-pink);
+  color: var(--clr-light);
+}
+
+select:hover {
+  cursor: pointer;
+}
+
+/* label {
+  display: flex;
+  flex-direction: row;
+} */

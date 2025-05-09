@@ -19,9 +19,26 @@
     align-items: center;
     width: 50%;
     height: 100%;
-    overflow-y: auto;
+
 }
 
 .register__form{
-    padding-top: 12rem;
+    display: block;
+    margin-left: 1.5rem;
+    width: 50%;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.register__select{
+    letter-spacing: 0.03rem;
+    margin-bottom: 1rem;
+    width: 100%;
+    background-color: var(--clr-gray);
+    color: var(--clr-secondary);
+}
+
+.register__selectContainer{
+        display: flex;
+        flex-direction: column;
 }

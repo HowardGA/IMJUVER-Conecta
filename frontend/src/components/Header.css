@@ -11,12 +11,11 @@
 .header nav {
     display: flex; 
     align-items: center; 
-    border-bottom: 0.5rem solid var(--clr-main);
     justify-content: space-between;
 }
 
 .header__bars{
-    color: var(--clr-dark);
+    color: var(--clr-light);
     width: 2rem;
     height: 2rem;
     display:block;
@@ -53,13 +52,14 @@
     
     .header__link{
         text-decoration: none;
-        color: var(--clr-dark);
+        color: var(--clr-light);
         font-weight:500;
         transition: color  0.3s;
     }
     
     .header__link:hover{
-        color: var(--clr-main);
+        color: var(--clr-darker);
+        cursor:pointer;
     }
     
     .header__bars{

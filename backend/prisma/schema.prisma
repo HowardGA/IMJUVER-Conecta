@@ -1,0 +1,300 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client" // Standard location
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Roles {
+  rol_id            Int       @id @default(autoincrement())
+  nombre            String    @db.VarChar(50)
+  descripcion       String?   @db.VarChar(200)
+  fecha_creacion    DateTime  @default(now())
+  fecha_modificacion DateTime @default(now())
+  usuarios          Usuarios[]
+}
+
+model Usuarios {
+  usu_id             Int       @id @default(autoincrement())
+  nombre             String    @db.VarChar(60)
+  apellido           String    @db.VarChar(60)
+  email              String    @unique @db.VarChar(100)
+  password           String    @db.VarChar(255)
+  rol_id             Int
+  rol                Roles     @relation(fields: [rol_id], references: [rol_id])
+  fecha_nacimiento   DateTime
+  telefono           String    @db.VarChar(15)
+  nivel_educativo    String?   @db.VarChar(100)
+  estado             Boolean   @default(true)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  isVerified         Boolean  @default(false)
+  verificationToken  String? @unique
+  verificationTokenExpires DateTime?
+  resetToken         String?
+  resetTokenExpiry   DateTime?
+  progresoLecciones  Progreso_Lecciones[]
+  constancias        Constancias[]
+  publicaciones      Publicaciones[]
+  hilosForos         Hilos_Foros[]
+  respuestasForos    Respuestas_Foros[]
+  propuestas         Propuestas[]
+  cvs                CVS[]
+}
+
+model Categorias_Cursos {
+  cat_cursos_id      Int       @id @default(autoincrement())
+  nombre             String    @db.VarChar(50)
+  descripcion        String    @db.VarChar(200)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  cursos             Cursos[]
+}
+
+model Imagenes {
+  img_id             Int       @id @default(autoincrement())
+  url                String    @db.VarChar(255)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  cursos             Cursos[]  @relation("Portada")
+  publicaciones      Publicaciones[]
+  eventos            Eventos[]
+}
+
+model Cursos {
+  curs_id            Int       @id @default(autoincrement())
+  titulo             String    @db.VarChar(100)
+  descripcion        String    @db.VarChar(200)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  cat_cursos_id      Int
+  categoria          Categorias_Cursos @relation(fields: [cat_cursos_id], references: [cat_cursos_id])
+  duracion           Int
+  nivel              String?   @db.VarChar(50)
+  portada_id         Int?
+  portada            Imagenes? @relation("Portada", fields: [portada_id], references: [img_id])
+  constancia         Boolean   @default(false)
+  publicado          Boolean   @default(false)
+  modulos            Modulos[]
+  constancias        Constancias[]
+}
+
+model Modulos {
+  mod_id             Int       @id @default(autoincrement())
+  titulo             String    @db.VarChar(100)
+  descripcion        String    @db.VarChar(200)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  curso_id           Int       // Changed from String to Int
+  curso              Cursos    @relation(fields: [curso_id], references: [curs_id])
+  orden              Int
+  lecciones          Lecciones[]
+}
+
+model Recursos {
+  rec_id             Int       @id @default(autoincrement())
+  titulo             String    @db.VarChar(100)
+  descripcion        String    @db.VarChar(200)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  url                String    @db.VarChar(255)
+  lecciones          Lecciones[]
+  publicaciones      Publicaciones[]
+}
+
+model Lecciones {
+  lec_id             Int       @id @default(autoincrement())
+  titulo             String    @db.VarChar(100)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  mod_id             Int
+  modulo             Modulos   @relation(fields: [mod_id], references: [mod_id])
+  orden              Int
+  tipo               String    @db.VarChar(50)
+  contenido          String?
+  recurso_id         Int?
+  recurso            Recursos? @relation(fields: [recurso_id], references: [rec_id])
+  progresoLecciones  Progreso_Lecciones[]
+}
+
+model Progreso_Lecciones {
+  prog_id            Int       @id @default(autoincrement())
+  lec_id             Int
+  leccion            Lecciones @relation(fields: [lec_id], references: [lec_id])
+  usu_id             Int
+  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id])
+  fecha_creacion     DateTime  @default(now())
+
+  @@unique([lec_id, usu_id])
+}
+
+model Constancias {
+  constancia_id      Int       @id @default(autoincrement())
+  usu_id             Int
+  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id])
+  curso_id           Int       // Changed from String to Int
+  curso              Cursos    @relation(fields: [curso_id], references: [curs_id])
+  fecha_creacion     DateTime  @default(now())
+
+  @@unique([usu_id, curso_id])
+}
+
+model Categorias_Publicaciones {
+  cat_pub_id         Int       @id @default(autoincrement())
+  nombre             String    @db.VarChar(50)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  publicaciones      Publicaciones[]
+  eventos            Eventos[]
+}
+
+model Publicaciones {
+  pub_id             Int       @id @default(autoincrement())
+  titulo             String    @db.VarChar(100)
+  contenido          String
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  cat_pub_id         Int
+  categoria          Categorias_Publicaciones @relation(fields: [cat_pub_id], references: [cat_pub_id])
+  img_id             Int?
+  imagen             Imagenes? @relation(fields: [img_id], references: [img_id])
+  recursos_id        Int?
+  recurso            Recursos? @relation(fields: [recursos_id], references: [rec_id])
+  autor_id           Int
+  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id])
+  visible            Boolean   @default(true)
+  destacado          Boolean   @default(false)
+}
+
+model Categorias_Foros {
+  cat_for_id         Int       @id @default(autoincrement())
+  nombre             String    @db.VarChar(50)
+  descripcion        String
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  hilosForos         Hilos_Foros[]
+}
+
+model Hilos_Foros {
+  hilo_id            Int       @id @default(autoincrement())
+  titulo             String    @db.VarChar(100)
+  contenido          String
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  cat_for_id         Int
+  categoria          Categorias_Foros @relation(fields: [cat_for_id], references: [cat_for_id])
+  autor_id           Int
+  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id])
+  visible            Boolean   @default(true)
+  respuestas         Respuestas_Foros[]
+}
+
+model Respuestas_Foros {
+  resp_id            Int       @id @default(autoincrement())
+  contenido          String
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  hilo_id            Int
+  hilo               Hilos_Foros @relation(fields: [hilo_id], references: [hilo_id], onDelete: Cascade)
+  autor_id           Int
+  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id])
+  visible            Boolean   @default(true)
+}
+
+enum EstadoPropuesta {
+  Recibida
+  EnRevision
+  Aprobada
+  Rechazada
+  Implementada
+}
+
+model Propuestas {
+  prop_id            Int       @id @default(autoincrement())
+  titulo             String    @db.VarChar(100)
+  contenido          String
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  autor_id           Int
+  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id])
+  estado             EstadoPropuesta @default(Recibida)
+}
+
+model Eventos {
+  eventos_id         Int       @id @default(autoincrement())
+  categoria_id       Int
+  categoria          Categorias_Publicaciones @relation(fields: [categoria_id], references: [cat_pub_id])
+  titulo             String    @db.VarChar(100)
+  descripcion        String
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  fecha_evento       DateTime
+  hora_inicio        DateTime
+  hora_fin           DateTime
+  lugar              String    @db.VarChar(100)
+  imagen_id          Int?
+  imagen             Imagenes? @relation(fields: [imagen_id], references: [img_id])
+  requiere_registro  Boolean   @default(false)
+  max_participantes  Int?
+}
+
+model Categorias_Directorio {
+  cat_dir_id         Int       @id @default(autoincrement())
+  nombre             String    @db.VarChar(50)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  directorios        Directorio[]
+}
+
+model Directorio {
+  dir_id             Int       @id @default(autoincrement())
+  nombre             String    @db.VarChar(100)
+  descripcion        String
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  cat_dir_id         Int
+  categoria          Categorias_Directorio @relation(fields: [cat_dir_id], references: [cat_dir_id])
+  url                String?   @db.VarChar(255)
+  telefono           String    @db.VarChar(15)
+  horarios           String
+}
+
+model Categorias_Ofertas {
+  cat_of_id          Int       @id @default(autoincrement())
+  nombre             String    @db.VarChar(50)
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  ofertas            Ofertas[]
+}
+
+model Ofertas {
+  of_id              Int       @id @default(autoincrement())
+  titulo             String    @db.VarChar(100)
+  descripcion        String
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  cat_of_id          Int
+  categoria          Categorias_Ofertas @relation(fields: [cat_of_id], references: [cat_of_id])
+  url                String?   @db.VarChar(255)
+  fecha_vigencia     DateTime
+  activo             Boolean   @default(true)
+}
+
+model CVS {
+  cv_id              Int       @id @default(autoincrement())
+  usu_id             Int
+  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id])
+  fecha_creacion     DateTime  @default(now())
+  fecha_modificacion DateTime  @default(now())
+  url                String    @db.VarChar(255)
+}
+
