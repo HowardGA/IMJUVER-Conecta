@@ -4,7 +4,9 @@ export const registration = (userData) =>
   apiClient.post('/auth/register', userData);
 
 export const login = (credentials) => 
-  apiClient.post('/auth/login', credentials);
+  apiClient.post('/auth/login', credentials, 
+   { withCredentials: true}
+  );
 
 export const verifyEmail = (token) => 
   apiClient.get(`/auth/verify-email/${token}`);

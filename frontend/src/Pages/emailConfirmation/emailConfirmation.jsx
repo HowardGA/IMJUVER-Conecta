@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-import { useVerifyEmail } from '../../assets/api/auth/authHooks';
+import { useVerifyEmail } from '../../api/auth/authHooks';
 import './emailConfirmation.css';
 import '../Register/Register.css';
 import Logo from '../../assets/logo.png';

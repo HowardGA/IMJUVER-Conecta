@@ -22,6 +22,19 @@
     justify-content: end;
 }
 
+.profileIcon__header{
+    color: var(--clr-light);
+    width: 2rem;
+    height: 2rem;
+    display:block;
+    transition: color 0.3s;
+}
+
+.profileIcon__header:hover{
+    cursor: pointer;
+    color: var(--clr-darker);
+}
+
 .header__logo {
     height: 3.5rem;
     width: 8.5rem;
@@ -65,4 +78,11 @@
     .header__bars{
         display: none;
     }
+
+    .profileIcon__header{
+        color: var(--clr-light);
+        width: 2rem;
+        height: 2rem;
+        display:block;
+}
 }

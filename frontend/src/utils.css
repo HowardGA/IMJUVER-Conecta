@@ -110,3 +110,11 @@
     margin-top: -0.5rem;
     margin-bottom: 0.8rem;
   }
+
+  .line-division{
+    height: 0.1rem;
+    width: 100%;
+    background-color: var(--clr-secondary);
+    border-radius: 5rem;
+    margin-bottom: 1rem;
+  }

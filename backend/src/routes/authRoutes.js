@@ -179,6 +179,14 @@ router.post('/login', async (req, res) => {
             }
         });
 
+        //check if that email exists
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Credenciales inválidas'
+            });
+        }
+
         if (!user.isVerified) {
             return res.status(403).json({
               success: false,
@@ -237,13 +245,14 @@ router.post('/login', async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
+        // res.header('Access-Control-Allow-Credentials', 'true');
+        // res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+
         return res.json({
             success: true,
             message: 'Inicio de sesión exitoso',
-            token,
             user: userData
         });
-
     } catch (error) {
         console.error('Login error:', error);
         return res.status(500).json({ 

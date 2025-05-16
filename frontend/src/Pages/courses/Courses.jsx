@@ -6,6 +6,7 @@ import Grid from '../../components/Grid/Grid';
 import './Courses.css';
 
 const Courses = () => {
+   
 
     return(
         <div className="courses__page container">
@@ -30,12 +31,11 @@ const Courses = () => {
             </nav>
                 
                 <Grid>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS}/>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script palabra palabra eres tu jiji jaja sdfsdf  sfsd fsdf sdfs sdfsd adasdsad sdfsdf sdfsd sdf sdf sdfsdfs ' imagePath={JS}/>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS}/>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS}/>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS}/>
-
+                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script CLICK' imagePath={JS} courseID={1}/>
+                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script palabra palabra eres tu jiji jaja sdfsdf  sfsd fsdf sdfs sdfsd adasdsad sdfsdf sdfsd sdf sdf sdfsdfs ' imagePath={JS} courseID={2}/>
+                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS} courseID={3}/>
+                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS} courseID={4}/>
+                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS} courseID={5}/>
                 </Grid>
            
         </div>

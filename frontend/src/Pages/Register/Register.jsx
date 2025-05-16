@@ -1,11 +1,11 @@
-import React, {useState, useEffect} from 'react';
+import React, { useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import './Register.css';
 import '../Login/Login.css';
 import Logo from '../../assets/logo.png';
 import { ToastContainer, toast, Bounce } from "react-toastify";
-import { useRegister } from '../../assets/api/auth/authHooks';
+import { useRegister } from '../../api/auth/authHooks';
 
 const Register = () => {
     const navigate = useNavigate();

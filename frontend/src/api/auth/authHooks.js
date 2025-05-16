@@ -14,14 +14,19 @@ export const useRegister = () => {
     });
   };
 
+
 export const useLogin = () => {
   return useMutation({
-    mutationFn: login,
-    onSuccess: (data) => {
-      localStorage.setItem('token', data.token);
+    mutationFn: (credentials) => login(credentials),
+    onSuccess: (response) => {
+      console.log(response);
+    },
+    onError: (error) => {
+      throw error;
     }
   });
 };
+
 
 export const useVerifyEmail = () => {
   return useMutation({
