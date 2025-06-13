@@ -2,8 +2,8 @@ import YouTube from 'react-youtube';
 
 const YoutubeEmbeded = ({ embedId }) => {
     const opts = {
-        height: '520',
-        width: '920',
+        height: '420',
+        width: '820',
     };
 
     const onReady = (event) => {

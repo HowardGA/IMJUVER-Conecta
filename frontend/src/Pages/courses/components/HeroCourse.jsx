@@ -1,10 +1,9 @@
 import './CoursesComponents.css';
-import JS from '../../../assets/placeholders/code.jpeg';
 
-const HeroCourse = () => {
+const HeroCourse = ({title, description, imagePath}) => {
 
+    const imageURL = imagePath ? imagePath.replace(' ', '%20') : '';
     const headerStyle ={
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${JS})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         height: '30%',
@@ -15,13 +14,13 @@ const HeroCourse = () => {
         alignItems: 'center',
         flexDirection: 'column',
         textAlign: 'center',
-        padding: '20px'
+        padding: '20px',
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${imageURL})`,
     }
-
     return (
         <div style={headerStyle}>
-                <h1 className="hero-course__title">Curso de JavaScript</h1>
-                <p className="hero-course__description">Aprende los fundamentos de JavaScript y comienza a desarrollar aplicaciones web interactivas.</p>
+                <h1 className="hero-course__title">{title}</h1>
+                <p className="hero-course__description">{description}</p>
                 <button className="btn">Inscribirse</button>
         </div>
     )

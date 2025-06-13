@@ -6,6 +6,11 @@
     align-items: center;
 }
 
+.content-container{
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
 .lesson-title{
     display: flex;
     flex-direction: row;
@@ -16,10 +21,12 @@
 }
 
 .video-container{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 80%;
-    height: 50%;
+   margin-bottom: 1rem;
+}
+.lesson-content{
+    margin-bottom: 1rem;
+}
+
+.subtitle{
+    color: var(--clr-light);
 }

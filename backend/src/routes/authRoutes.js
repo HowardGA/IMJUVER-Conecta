@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../prismaClient.js';
 import { v4 as uuidv4 } from 'uuid';
 import { sendVerificationEmail } from '../services/emailService.js';
+import authenticateToken from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -19,6 +20,10 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ message: 'El formato del email es inválido', status: 'error' });
     }
 
+    if (password.length < 6) {
+        return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres.', status: 'error' });
+    }
+
     try {
         const existingUser = await prisma.usuarios.findUnique({
             where: { email }
@@ -30,12 +35,12 @@ router.post('/register', async (req, res) => {
     } catch (error) {
         return res.status(500).json({ message: 'Error al verificar el usuario', status: 'error' });
     }
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const hashedPassword = bcrypt.hashSync(password, 10); // Increased salt rounds to 10
     const verificationToken = uuidv4();
 
     try {
-        const newUser = await prisma.usuarios.create({
+        await prisma.usuarios.create({
             data: {
                 nombre,
                 apellido,
@@ -54,23 +59,8 @@ router.post('/register', async (req, res) => {
             }
         });
 
-        // Create a token
-        const token = jwt.sign(
-            { id: newUser.usu_id, email: newUser.email, rol_id: newUser.rol_id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        await sendVerificationEmail(email, verificationToken);
-
-        res.cookie('token', token, { 
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 24 * 60 * 60 * 1000
-          });
-          
           res.status(201).json({
-            message: 'Usuario registrado con exito! Por favor verifique su email',
+            message: 'Usuario registrado con exito! Por favor verifique su correo',
             status: 'success',
           });
 
@@ -171,7 +161,6 @@ router.post('/login', async (req, res) => {
     }
 
     try {
-        // Find user with role information
         const user = await prisma.usuarios.findUnique({
             where: { email },
             include: {
@@ -179,7 +168,6 @@ router.post('/login', async (req, res) => {
             }
         });
 
-        //check if that email exists
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -194,14 +182,6 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        if (!user) {
-            return res.status(401).json({ 
-                success: false,
-                message: 'Credenciales inválidas' 
-            });
-        }
-
-        // Check if user is active
         if (!user.estado) {
             return res.status(403).json({ 
                 success: false,
@@ -209,7 +189,6 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Verify password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ 
@@ -218,10 +197,9 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Create JWT token
         const token = jwt.sign(
             { 
-                id: user.usu_id, 
+                usu_id: user.usu_id, 
                 email: user.email, 
                 rol_id: user.rol_id,
                 rol_nombre: user.rol?.nombre 
@@ -245,9 +223,6 @@ router.post('/login', async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
-        // res.header('Access-Control-Allow-Credentials', 'true');
-        // res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-
         return res.json({
             success: true,
             message: 'Inicio de sesión exitoso',
@@ -261,6 +236,47 @@ router.post('/login', async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
+});
+
+router.get('/me', authenticateToken, async (req, res) => {
+    console.log('Current user data from token:', req.user); 
+    if (req.user) {
+        try {
+            const user = await prisma.usuarios.findUnique({
+                where: { usu_id: req.usu_id }, 
+                include: { rol: true }
+            });
+
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+            }
+
+            const userData = {
+                usu_id: user.usu_id,
+                nombre: user.nombre,
+                apellido: user.apellido,
+                email: user.email,
+                rol_id: user.rol_id,
+                rol_nombre: user.rol?.nombre
+            };
+            return res.json({ success: true, user: userData });
+        } catch (error) {
+            console.error('Error fetching user data for /me:', error);
+            return res.status(500).json({ success: false, message: 'Error del servidor al consuldar los datos' });
+        }
+    } else {
+        return res.status(401).json({ success: false, message: 'No esta autenticado' });
+    }
+});
+
+router.post('/logout', (req, res) => {
+    res.cookie('token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        expires: new Date(0)
+    });
+    return res.json({ success: true, message: 'Sesión cerrada exitosamente' });
 });
 
 export default router;

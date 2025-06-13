@@ -30,6 +30,14 @@
     width: 100%;
 }
 
+.courses__actions {
+    display: flex;
+    align-items: center;
+    justify-content:end;
+    gap: 1rem;
+    width: 100%;
+}
+
 #category{
     margin-top: 1.5rem;
     width: 67%;

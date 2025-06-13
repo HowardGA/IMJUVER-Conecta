@@ -1,25 +1,23 @@
 import HeroCourse from "./HeroCourse";
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import LessonsList from "./LessonsList";
+import { useGetLessonsbyModule } from "../../../api/courses/coursesHooks";
 import './CoursesComponents.css';
 
-const ChoosenCourse = ({course}) => {
-
-    const lessonsData = [
-        { id: 1, title: "Variables y constantes", description: "Description of Lesson 1 - More detailed content here." },
-        { id: 2, title: "Operadores lógicos", description: "Description of Lesson 2 - Even more information can be added." },
-        { id: 3, title: "Palabras reservadas", description: "Description of Lesson 3 - And so on for each lesson." },
-        { id: 4, title: "Condicionales", description: "Description of Lesson 4 - You get the idea!" },
-        { id: 5, title: "Ternarios", description: "Description of Lesson 5 - This is the last one for now." }
-      ];
-
+const ChoosenCourse = () => {
+    const location = useLocation();
+    const {courseData} = location.state || {};
+    const { title, description, imagePath, courseID, modulos } = courseData || {};
+    const {data: lessons, isLoading, isError} = useGetLessonsbyModule(courseID);
 
     return (
         <div className="choosen-course container">
-        <HeroCourse/>
+        <HeroCourse title={title} description={description} imagePath={imagePath}/>
             <div className="choosen-course__content">
-                <p className="choosen-course-description">Lorem ipsum dolor sit amet consectetur adipisicing elit. Modi cupiditate sit, aperiam voluptatum a maiores dolores saepe molestias voluptates totam quos minima, itaque nobis error animi blanditiis. Quo, id modi! Lorem ipsum dolor, sit amet consectetur adipisicing elit. Id aliquid fugiat eveniet sed eaque provident sequi, illo iste odio fuga voluptate neque? Vitae veniam vel, vero numquam nemo fugit aspernatur!</p>
-                <LessonsList lessons={lessonsData}/>
+                {
+                    isLoading ? (<p>Loading...</p>) : (<LessonsList lessons={lessons.data || []} courseID={courseID} />)
+                }
+                
             </div> 
         </div>
     );

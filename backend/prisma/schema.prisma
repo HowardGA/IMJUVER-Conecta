@@ -97,7 +97,7 @@ model Modulos {
   curso_id           Int       // Changed from String to Int
   curso              Cursos    @relation(fields: [curso_id], references: [curs_id])
   orden              Int
-  lecciones          Lecciones[]
+  contenido           ContenidoModulo[] 
 }
 
 model Recursos {
@@ -116,14 +116,29 @@ model Lecciones {
   titulo             String    @db.VarChar(100)
   fecha_creacion     DateTime  @default(now())
   fecha_modificacion DateTime  @default(now())
-  mod_id             Int
-  modulo             Modulos   @relation(fields: [mod_id], references: [mod_id])
-  orden              Int
-  tipo               String    @db.VarChar(50)
-  contenido          String?
+  contenido          Json
   recurso_id         Int?
   recurso            Recursos? @relation(fields: [recurso_id], references: [rec_id])
   progresoLecciones  Progreso_Lecciones[]
+  videos             LeccionVideos[]     
+  archivos           LeccionArchivos[]  
+  contenidoModulo     ContenidoModulo? @relation("LessonContent")
+}
+
+model LeccionVideos {
+  id        Int       @id @default(autoincrement())
+  lec_id    Int
+  video_id  String    @db.VarChar(50) 
+  leccion   Lecciones @relation(fields: [lec_id], references: [lec_id])
+}
+
+model LeccionArchivos {
+  id        Int       @id @default(autoincrement())
+  lec_id    Int
+  url       String    @db.VarChar(255)
+  nombre    String    @db.VarChar(100)
+  tipo      String    @db.VarChar(50) 
+  leccion   Lecciones @relation(fields: [lec_id], references: [lec_id])
 }
 
 model Progreso_Lecciones {
@@ -137,6 +152,39 @@ model Progreso_Lecciones {
   @@unique([lec_id, usu_id])
 }
 
+model Quizzes {
+  quiz_id             Int              @id @default(autoincrement())
+  titulo              String           @db.VarChar(100)
+  descripcion         String?          @db.VarChar(200)
+  fecha_creacion      DateTime         @default(now())
+  fecha_modificacion  DateTime         @default(now())
+  preguntas           QuizPreguntas[]
+  contenidoModulo     ContenidoModulo? @relation("QuizContent")
+}
+
+enum TipoPregunta {
+  MULTIPLE_CHOICE
+  SINGLE_CHOICE  
+  TRUE_FALSE
+}
+
+model QuizPreguntas {
+  pregunta_id         Int              @id @default(autoincrement())
+  texto_pregunta      String           @db.VarChar(500)
+  tipo_pregunta       TipoPregunta
+  quiz_id             Int
+  quiz                Quizzes          @relation(fields: [quiz_id], references: [quiz_id])
+  respuestas          QuizRespuestas[]
+}
+
+model QuizRespuestas {
+  respuesta_id        Int              @id @default(autoincrement())
+  texto_respuesta     String           @db.VarChar(255)
+  correcta            Boolean          @default(false)
+  pregunta_id         Int
+  pregunta            QuizPreguntas    @relation(fields: [pregunta_id], references: [pregunta_id])
+}
+
 model Constancias {
   constancia_id      Int       @id @default(autoincrement())
   usu_id             Int
@@ -146,6 +194,21 @@ model Constancias {
   fecha_creacion     DateTime  @default(now())
 
   @@unique([usu_id, curso_id])
+}
+
+model ContenidoModulo {
+  id                   Int           @id @default(autoincrement())
+  mod_id               Int           
+  modulo               Modulos       @relation(fields: [mod_id], references: [mod_id])
+  orden                Int           
+  tipo                 String        @db.VarChar(50)
+  lec_id               Int?          @unique
+  leccion              Lecciones?    @relation("LessonContent", fields: [lec_id], references: [lec_id])
+  quiz_id              Int?          @unique
+  quiz                 Quizzes?      @relation("QuizContent", fields: [quiz_id], references: [quiz_id])
+  fecha_creacion       DateTime      @default(now())
+  fecha_modificacion   DateTime      @default(now())
+  @@unique([mod_id, orden])
 }
 
 model Categorias_Publicaciones {

@@ -4,12 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import JS from '../../assets/placeholders/code.jpeg';
 import Grid from '../../components/Grid/Grid';
 import './Courses.css';
+import { useGetCourses } from '../../api/courses/coursesHooks';
+import { useAuth } from '../../context/AuthContext';
 
 const Courses = () => {
+   const navigate = useNavigate();
+    const { data: courses, isLoading, isError } = useGetCourses();
+    const {user} = useAuth();
+    const {rol_id} = user;
    
-
     return(
-        <div className="courses__page container">
+        <>
+        {isLoading ? (<div className='spinner'></div>):
+            (<div className="courses__page container">
             <nav className='courses__nav'>
                     <div className='courses__search'>
                         <input type="text" placeholder='Buscar cursos' className='searchBar'/>
@@ -23,22 +30,36 @@ const Courses = () => {
                         </button>
                     </div>
 
-                <select name="category" id="category">
+                <div className='courses__actions'>
+                    { rol_id == 1 &&
+                        <button className='btn' onClick={() => navigate('/courses/create')}>
+                        <div className='searchIcon'>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
+                            <path fillRule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                    </button>
+                    }
+
+                    <select name="category" id="category">
                             <option value="0">Filtre por categoría:</option>
                             <option value="1">Informatica</option>
                             <option value="2">Derecho</option>
-                        </select>
+                    </select>
+                </div>
             </nav>
                 
                 <Grid>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script CLICK' imagePath={JS} courseID={1}/>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script palabra palabra eres tu jiji jaja sdfsdf  sfsd fsdf sdfs sdfsd adasdsad sdfsdf sdfsd sdf sdf sdfsdfs ' imagePath={JS} courseID={2}/>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS} courseID={3}/>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS} courseID={4}/>
-                    <Card title='JavaScript' description='Curso de conocimientos basicos de java script' imagePath={JS} courseID={5}/>
+                    {courses.data.map((course) => {
+                        return(
+                            <Card key={course.curs_id} title={course.titulo} description={course.descripcion} imagePath={course.portada.url} courseID={course.curs_id} modulos={course.modulos}/>
+                        )
+                    })}
+                   
                 </Grid>
            
-        </div>
+        </div>)}
+        </>
     );
 }
 

@@ -1,16 +1,21 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js';
 import roleRoutes from './routes/roleRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-
+import coursesRoutes from './routes/coursesRoutes.js';
+import path from 'path';
+import coursesCategoryRoutes from './routes/coursesCategoryRoutes.js';
+import  authenticateToken from './middleware/authMiddleware.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(express.json());
+app.use(cookieParser());
 const corsOptions = {
-  origin: 'http://localhost:5173', 
+  origin: 'http://localhost:3000', 
   credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE'], 
   allowedHeaders: ['Content-Type', 'Authorization'] 
@@ -24,10 +29,12 @@ app.get('/', (req, res) => {
   });
 
 
-
 app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/user', authenticateToken, userRoutes);
+app.use('/api/courseCategory', authenticateToken, coursesCategoryRoutes);
+app.use('/api/course', authenticateToken, coursesRoutes);
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });

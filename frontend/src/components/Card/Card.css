@@ -48,6 +48,8 @@
     flex-direction: column;
     justify-content: flex-start;
     font-size: 0.8rem;
+    color: var(--clr-dark);
+
 
 }
 .card__description p {

@@ -1,20 +1,20 @@
 import jwt from 'jsonwebtoken';
 
-function authMiddleware(req, res, next) {
-    const token = req.headers['authorization'];
+const authenticateToken = (req, res, next) => {
+    const token = req.cookies.token; 
 
     if (!token) {
-        return res.status(401).json({ message: 'Token no proporcionado' });
+        return res.status(401).json({ message: 'Acceso denegado. No se proporcionó un token de autenticación.' });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ message: 'Token inválido' });
-        }
-
-        req.user = decoded;
+    try {
+        const user = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = user; 
         next();
-    });
-}
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return res.status(403).json({ message: 'Token de autenticación inválido o expirado.' });
+    }
+};
 
-export default authMiddleware;
+export default authenticateToken;

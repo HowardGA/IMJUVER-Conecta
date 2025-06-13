@@ -10,8 +10,9 @@ import Profile from './Pages/Profile/Profile';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ChoosenCourse from './Pages/courses/components/ChoosenCourse.jsx';
 import SpecificLesson from './Pages/courses/SpecificLesson.jsx';
-
-
+import CreateCourse from './Pages/courses/CreateCourse/CreateCourse.jsx';
+import CreateLessons from './Pages/courses/CreateLessons/CreateLessons.jsx';
+import CreateQuizzes from './Pages/courses/createQuizz/CreateQuizzes.jsx';
 
 function App() {
 
@@ -30,6 +31,10 @@ function App() {
             <Route path="courses" element={<Courses />} />
             <Route path="courses/:courseId" element={<ChoosenCourse />} />
             <Route path="courses/:courseId/lessons/:lessonId" element={<SpecificLesson />} />
+            <Route path="courses/create" element={<CreateCourse />} />
+            <Route path="courses/create/lessons" element={<CreateLessons />}/>
+            <Route path="courses/create/quizzes" element={<CreateQuizzes />}/>
+
             <Route path="*" element={<h1>404 Not Found</h1>} />
          
           </Route>

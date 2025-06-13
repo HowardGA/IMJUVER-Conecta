@@ -14,7 +14,7 @@
   --clr-lightTranslucid: #fafafa83;
   --clr-light-main: #A95670;
 }
-
+/* c8a163 */
 /* main rgb(150, 29, 72)
  */
 
@@ -98,3 +98,8 @@ h3{
   display: flex;
   flex-direction: row;
 } */
+
+p{
+  font-size: 1rem;
+  color: var(--clr-light);
+}

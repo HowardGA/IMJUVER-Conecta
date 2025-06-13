@@ -1,13 +1,25 @@
 import { useNavigate } from 'react-router-dom';
 import './Card.css';
+import { useAuth } from '../../context/AuthContext';
 
-const Card = ({ title, description, imagePath, courseID }) => {
+const Card = ({ title, description, imagePath, courseID, modulos }) => {
     const navigate = useNavigate();
+     const {user} = useAuth();
+    const {rol_id} = user;
 
     const handleCardClick = (courseId) => {
-        console.log(courseId);
-        navigate(`/courses/${courseId}`);
+        const courseData = {
+            title: title,
+            description: description,
+            imagePath: imagePath,
+            courseID: courseID,
+            modulos: modulos
+        };
+        rol_id == 1 ? navigate(`create/lessons`, {state: {modulos}}) : navigate(`/courses/${courseId}`,{state: { courseData }});
+      // 
     }
+
+
     return (
         <div className="card" onClick={() => {handleCardClick(courseID)}}>
             <img src={imagePath} alt={title} className="card__image" />
