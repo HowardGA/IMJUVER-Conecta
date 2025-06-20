@@ -2,7 +2,7 @@ services:
   - type: web
     name: backend
     env: node
-    plan: free  # Or 'starter', 'standard', etc.
+    plan: free 
     buildCommand: |
       npm install
       npx prisma generate
