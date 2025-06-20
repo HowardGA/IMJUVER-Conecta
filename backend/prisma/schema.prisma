@@ -42,7 +42,7 @@ model Usuarios {
   verificationTokenExpires DateTime?
   resetToken         String?
   resetTokenExpiry   DateTime?
-  progresoLecciones  Progreso_Lecciones[]
+  progresoCurso      ProgresoContenidoModulo[]
   constancias        Constancias[]
   publicaciones      Publicaciones[]
   hilosForos         Hilos_Foros[]
@@ -119,7 +119,6 @@ model Lecciones {
   contenido          Json
   recurso_id         Int?
   recurso            Recursos? @relation(fields: [recurso_id], references: [rec_id])
-  progresoLecciones  Progreso_Lecciones[]
   videos             LeccionVideos[]     
   archivos           LeccionArchivos[]  
   contenidoModulo     ContenidoModulo? @relation("LessonContent")
@@ -141,16 +140,18 @@ model LeccionArchivos {
   leccion   Lecciones @relation(fields: [lec_id], references: [lec_id])
 }
 
-model Progreso_Lecciones {
-  prog_id            Int       @id @default(autoincrement())
-  lec_id             Int
-  leccion            Lecciones @relation(fields: [lec_id], references: [lec_id])
-  usu_id             Int
-  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id])
-  fecha_creacion     DateTime  @default(now())
+model ProgresoContenidoModulo {
+  prog_id             Int               @id @default(autoincrement())
+  usu_id              Int
+  user                Usuarios          @relation(fields: [usu_id], references: [usu_id])
+  contenido_id        Int
+  contenido           ContenidoModulo   @relation(fields: [contenido_id], references: [id])
+  completado          Boolean           @default(false)
+  fecha_creacion      DateTime          @default(now())
 
-  @@unique([lec_id, usu_id])
+  @@unique([usu_id, contenido_id])
 }
+
 
 model Quizzes {
   quiz_id             Int              @id @default(autoincrement())
@@ -208,6 +209,7 @@ model ContenidoModulo {
   quiz                 Quizzes?      @relation("QuizContent", fields: [quiz_id], references: [quiz_id])
   fecha_creacion       DateTime      @default(now())
   fecha_modificacion   DateTime      @default(now())
+  progresoContenido    ProgresoContenidoModulo[]
   @@unique([mod_id, orden])
 }
 

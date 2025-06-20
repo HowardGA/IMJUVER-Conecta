@@ -8,6 +8,8 @@ import coursesRoutes from './routes/coursesRoutes.js';
 import path from 'path';
 import coursesCategoryRoutes from './routes/coursesCategoryRoutes.js';
 import  authenticateToken from './middleware/authMiddleware.js';
+import courseProgress from './routes/courseProgress.js'
+import courseCrud from './routes/crudCourse.js'
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,8 +34,10 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/user', authenticateToken, userRoutes);
-app.use('/api/courseCategory', authenticateToken, coursesCategoryRoutes);
-app.use('/api/course', authenticateToken, coursesRoutes);
+app.use('/api/courseCategory', coursesCategoryRoutes);
+app.use('/api/course', coursesRoutes);
+app.use('/api/progress', authenticateToken, courseProgress);
+app.use('/api/course-crud', authenticateToken, courseCrud);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use((req, res) => {

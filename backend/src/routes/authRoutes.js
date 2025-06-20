@@ -8,7 +8,6 @@ import authenticateToken from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-//Register a new user
 router.post('/register', async (req, res) => {
     const { nombre, apellido, email, password, telefono, rol_id, fecha_nacimiento, nivel_educativo } = req.body;
     
@@ -243,7 +242,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     if (req.user) {
         try {
             const user = await prisma.usuarios.findUnique({
-                where: { usu_id: req.usu_id }, 
+                where: { usu_id: req.user.usu_id }, 
                 include: { rol: true }
             });
 

@@ -9,7 +9,6 @@ router.get('/:userID', async (req, res) => {
     if(!userID){
         return res.status(400).json({message: 'ID de usuario no proporcionado'});
     }
-
     try{
         const user = await prisma.usuarios.findFirst({
             where: {usu_id: parseInt(userID)},
