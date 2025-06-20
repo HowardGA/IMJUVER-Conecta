@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: backend
+    name: imjuver-backend
     env: node
     plan: free
     buildCommand: |
@@ -8,9 +8,19 @@ services:
       npm install
       npx prisma generate
       npx prisma migrate deploy
-    startCommand: node --env-file=.env ./backend/src/server.js
+    startCommand: node ./backend/src/server.js
     envVars:
+      - key: PORT
+        value: 3001
       - key: DATABASE_URL
         value: postgresql://neondb_owner:npg_tI9cZ4bqHVpl@ep-restless-bonus-a8zbq4ui-pooler.eastus2.azure.neon.tech/imjuverconecta?sslmode=require
-      - key: NODE_ENV
-        value: production
+      - key: JWT_SECRET
+        value: HowardGarcia321.
+      - key: EMAIL_USER
+        value: howardisaigarciaarreola@gmail.com
+      - key: EMAIL_PASS
+        value: kbacrqmyvxrheiqh
+      - key: BASE_URL
+        value: https://imjuver-conecta-next-js.vercel.app
+      - key: SERVER_URL
+        value: https://imjuver-backend.onrender.com
