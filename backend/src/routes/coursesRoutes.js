@@ -1,15 +1,21 @@
 import uploadFiles from '../middleware/uploadFile.js';
-
 import express from 'express';
 import  prisma  from '../prismaClient.js';
 import upload from '../middleware/upload.js';
 import path from 'path';
+import multer from 'multer';
+import fs from 'fs/promises';
 
 const router = express.Router();
 const tipoQuiz = 'Cuestionario';
 
 //save a course
 router.post('/', upload.single('portada'), async (req, res) => {
+  console.log('--- Course Creation Request ---');
+  console.log('req.body:', req.body);
+  console.log('req.file:', req.file);
+  console.log('--- End Request Log ---');
+
   try {
     const { titulo, descripcion, cat_cursos_id, duracion, nivel, modulos } = req.body;
     if (!titulo || !descripcion || !cat_cursos_id || !duracion || !nivel) {
@@ -432,6 +438,7 @@ router.get('/quiz/:quiz_id', async (req, res) => {
                             select: { 
                                 respuesta_id: true,
                                 texto_respuesta: true,
+                                correcta: true,
                             }
                         }
                     }
@@ -529,6 +536,279 @@ router.post('/quiz/:quiz_id/submit', async (req, res) => {
         res.status(500).json({ message: 'Error submitting quiz' });
     }
 });
+const __dirname = path.resolve();
+const storagePath = path.join(__dirname, 'uploads/files');
+router.put('/lessons/:id', uploadFiles.array('archivos'), async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const lessonId = parseInt(id);
+    const { titulo, contenido, youtube_videos, existing_files } = req.body;
+    const uploadedFiles = req.files; 
+    const parsedContenido = JSON.parse(contenido);
+    const parsedYoutubeVideos = JSON.parse(youtube_videos);
+    const parsedExistingFiles = JSON.parse(existing_files);
+    const result = await prisma.$transaction(async (prismaTx) => {
+      const updatedLesson = await prismaTx.lecciones.update({
+        where: { lec_id: lessonId },
+        data: {
+          titulo,
+          contenido: parsedContenido,
+          fecha_modificacion: new Date(),
+        },
+      });
+      if (!updatedLesson) {
+        return res.status(404).json({ message: 'Lección no encontrada para actualizar.' });
+      }
+      await prismaTx.leccionVideos.deleteMany({
+        where: {
+          lec_id: lessonId,
+          video_id: {
+            notIn: parsedYoutubeVideos, 
+          },
+        },
+      });
+      const currentVideoRecords = await prismaTx.leccionVideos.findMany({
+        where: { lec_id: lessonId },
+        select: { video_id: true }
+      });
+      const currentVideoIds = new Set(currentVideoRecords.map(v => v.video_id));
+      const videosToAdd = parsedYoutubeVideos.filter(
+        (video_id) => !currentVideoIds.has(video_id)
+      );
+      if (videosToAdd.length > 0) {
+        await prismaTx.leccionVideos.createMany({
+          data: videosToAdd.map(video => ({
+            lec_id: lessonId,
+            video_id: video,
+          })),
+          skipDuplicates: true 
+        });
+      }
+      const existingFileIdsToKeep = new Set(parsedExistingFiles.map(file => file.id)); 
+      const filesToDelete = await prismaTx.leccionArchivos.findMany({
+        where: {
+          lec_id: lessonId,
+          id: {
+            notIn: Array.from(existingFileIdsToKeep),
+          },
+        },
+        select: { url: true, id: true } 
+      });
+      await prismaTx.leccionArchivos.deleteMany({
+        where: {
+          id: {
+            in: filesToDelete.map(f => f.id)
+          }
+        }
+      });
+      for (const fileRecord of filesToDelete) {
+        try {
+          const filename = path.basename(fileRecord.url);
+          const filePath = path.join(storagePath, filename);
+          await fs.unlink(filePath);
+          console.log(`Deleted file from filesystem: ${filePath}`);
+        } catch (fileErr) {
+          console.warn(`Could not delete file ${fileRecord.url} from filesystem:`, fileErr);
+        }
+      }
 
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        await prismaTx.leccionArchivos.createMany({
+          data: uploadedFiles.map(file => ({
+            lec_id: lessonId,
+            url: `/uploads/files/${file.filename}`, // Ensure this path is correct
+            nombre: file.originalname,
+            tipo: file.mimetype,
+          })),
+        });
+      }
+      // Return the updated lesson
+      return updatedLesson;
+    });
+
+    res.status(200).json({
+      message: 'Lección actualizada exitosamente',
+      lesson: result // The updated lesson object
+    });
+
+  } catch (error) {
+    console.error('Error updating lesson:', error);
+    if (error instanceof multer.MulterError) {
+      console.error('Multer Error Code:', error.code);
+      console.error('Multer Error Field Name:', error.field);
+    }
+    res.status(500).json({ message: 'Error al actualizar la lección' });
+  }
+});
+
+router.put('/quiz/:id', async (req, res) => {
+    const { id } = req.params;
+    const quizId = parseInt(id);
+    const { titulo, descripcion, preguntas } = req.body;
+    if (isNaN(quizId) || !titulo || !descripcion || !Array.isArray(preguntas)) {
+        return res.status(400).json({ message: 'Datos de cuestionario inválidos o incompletos.' });
+    }
+
+    try {
+        const result = await prisma.$transaction(async (prismaTx) => {
+            const updatedQuiz = await prismaTx.quizzes.update({
+                where: { quiz_id: quizId },
+                data: {
+                    titulo: titulo,
+                    descripcion: descripcion,
+                    fecha_modificacion: new Date(),
+                },
+            });
+            if (!updatedQuiz) {
+                throw new Error('Cuestionario no encontrado para actualizar.');
+            }
+            const incomingQuestionIds = preguntas
+                .filter((p) => p.pregunta_id) 
+                .map((p) => p.pregunta_id);
+            const existingQuestions = await prismaTx.quizPreguntas.findMany({
+                where: { quiz_id: quizId },
+                select: { pregunta_id: true },
+            });
+            const existingQuestionIds = existingQuestions.map((q) => q.pregunta_id);
+            const questionsToDeleteIds = existingQuestionIds.filter(
+                (id) => !incomingQuestionIds.includes(id)
+            );
+            if (questionsToDeleteIds.length > 0) {
+                await prismaTx.quizPreguntas.deleteMany({
+                    where: {
+                        pregunta_id: { in: questionsToDeleteIds },
+                        quiz_id: quizId,
+                    },
+                });
+            }
+            for (const incomingQuestion of preguntas) {
+                if (incomingQuestion.pregunta_id && existingQuestionIds.includes(incomingQuestion.pregunta_id)) {
+                    await prismaTx.quizPreguntas.update({
+                        where: { pregunta_id: incomingQuestion.pregunta_id },
+                        data: {
+                            texto_pregunta: incomingQuestion.texto_pregunta,
+                            tipo_pregunta: incomingQuestion.tipo_pregunta,
+                        },
+                    });
+                    const incomingAnswerIds = incomingQuestion.respuestas
+                        .filter((a) => a.respuesta_id) 
+                        .map((a) => a.respuesta_id);
+                    const existingAnswers = await prismaTx.quizRespuestas.findMany({
+                        where: { pregunta_id: incomingQuestion.pregunta_id },
+                        select: { respuesta_id: true },
+                    });
+                    const existingAnswerIds = existingAnswers.map((a) => a.respuesta_id);
+                    const answersToDeleteIds = existingAnswerIds.filter(
+                        (id) => !incomingAnswerIds.includes(id)
+                    );
+
+                    if (answersToDeleteIds.length > 0) {
+                        await prismaTx.quizRespuestas.deleteMany({
+                            where: {
+                                respuesta_id: { in: answersToDeleteIds },
+                                pregunta_id: incomingQuestion.pregunta_id, 
+                            },
+                        });
+                    }
+                    for (const incomingAnswer of incomingQuestion.respuestas) {
+                        if (incomingAnswer.respuesta_id && existingAnswerIds.includes(incomingAnswer.respuesta_id)) {
+                            await prismaTx.quizRespuestas.update({
+                                where: { respuesta_id: incomingAnswer.respuesta_id },
+                                data: {
+                                    texto_respuesta: incomingAnswer.texto_respuesta,
+                                    correcta: incomingAnswer.correcta,
+                                },
+                            });
+                        } else {
+                            await prismaTx.quizRespuestas.create({
+                                data: {
+                                    texto_respuesta: incomingAnswer.texto_respuesta,
+                                    correcta: incomingAnswer.correcta,
+                                    pregunta_id: incomingQuestion.pregunta_id,
+                                },
+                            });
+                        }
+                    }
+                } else {
+                    await prismaTx.quizPreguntas.create({
+                        data: {
+                            texto_pregunta: incomingQuestion.texto_pregunta,
+                            tipo_pregunta: incomingQuestion.tipo_pregunta,
+                            quiz_id: quizId, 
+                            respuestas: {
+                                createMany: {
+                                    data: incomingQuestion.respuestas.map((answer) => ({
+                                        texto_respuesta: answer.texto_respuesta,
+                                        correcta: answer.correcta,
+                                    })),
+                                },
+                            },
+                        },
+                    });
+                }
+            }
+            return { message: 'Cuestionario actualizado con éxito', quizId: quizId };
+        });
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error al actualizar el cuestionario:', error);
+        if (error.message === 'Cuestionario no encontrado para actualizar.') {
+             return res.status(404).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al actualizar el cuestionario', error: error.message });
+    }
+});
+
+router.delete('/quiz/:id', async (req, res) => {
+    const { id } = req.params;
+    const quizId = parseInt(id);
+    if (isNaN(quizId)) {
+        return res.status(400).json({ message: 'ID de cuestionario inválido.' });
+    }
+    try {
+        const existingQuiz = await prisma.quizzes.findUnique({
+            where: { quiz_id: quizId },
+        });
+        if (!existingQuiz) {
+            return res.status(404).json({ message: 'Cuestionario no encontrado.' });
+        }
+        await prisma.quizzes.delete({
+            where: { quiz_id: quizId },
+        });
+        res.status(200).json({ message: 'Cuestionario eliminado con éxito.' });
+    } catch (error) {
+        console.error('Error al eliminar el cuestionario:', error);
+        if (error.code === 'P2025') { 
+            return res.status(404).json({ message: 'Cuestionario no encontrado.' });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al eliminar el cuestionario.', error: error.message });
+    }
+});
+
+router.delete('/lesson/:id', async (req, res) => {
+    const { id } = req.params;
+    const lessonId = parseInt(id);
+    if (isNaN(lessonId)) {
+        return res.status(400).json({ message: 'ID de lección inválido.' });
+    }
+    try {
+        const existingLesson = await prisma.lecciones.findUnique({
+            where: { lec_id: lessonId },
+        });
+        if (!existingLesson) {
+            return res.status(404).json({ message: 'Lección no encontrada.' });
+        }
+        await prisma.lecciones.delete({
+            where: { lec_id: lessonId },
+        });
+        res.status(200).json({ message: 'Lección eliminada con éxito.' });
+    } catch (error) {
+        console.error('Error al eliminar la lección:', error);
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: 'Lección no encontrada.' });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al eliminar la lección.', error: error.message });
+    }
+});
 
 export default router;

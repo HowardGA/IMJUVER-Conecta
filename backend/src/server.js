@@ -10,6 +10,9 @@ import coursesCategoryRoutes from './routes/coursesCategoryRoutes.js';
 import  authenticateToken from './middleware/authMiddleware.js';
 import courseProgress from './routes/courseProgress.js'
 import courseCrud from './routes/crudCourse.js'
+import annourcementRoutes from './routes/eventRoute.js';
+import ofertasRoutes from './routes/ofertasRoutes.js';
+import directorioRoutes from './routes/directorioRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,7 +20,7 @@ const PORT = process.env.PORT || 3001;
 app.use(express.json());
 app.use(cookieParser());
 const corsOptions = {
-  origin: ['https://imjuver-conecta-next-js.vercel.app','http://localhost:3000', ], 
+  origin: 'http://localhost:3000', 
   credentials: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE'], 
   allowedHeaders: ['Content-Type', 'Authorization'] 
@@ -38,6 +41,10 @@ app.use('/api/courseCategory', coursesCategoryRoutes);
 app.use('/api/course', coursesRoutes);
 app.use('/api/progress', authenticateToken, courseProgress);
 app.use('/api/course-crud', authenticateToken, courseCrud);
+app.use('/api/announcements', annourcementRoutes);
+app.use('/api/ofertas', ofertasRoutes);
+app.use('/api/directorio', directorioRoutes);
+
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use((req, res) => {
@@ -47,3 +54,4 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 })
+//https://imjuver-conecta-next-js.vercel.app

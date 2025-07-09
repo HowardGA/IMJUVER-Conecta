@@ -16,7 +16,7 @@ export const sendVerificationEmail = async (email, token) => {
     to: email,
     subject: 'Verificación de su correo electrónico',
     html: `
-     <img src="https://i.imgur.com/tu5DWD3.png" alt="Logo IMJUVER" style="width: 300px; height: auto;">
+     <img src="https://i.ibb.co/dsDtGvhr/rosarito-logo.png" alt="Logo IMJUVER" style="width: 300px; height: auto;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td align="center" style="padding: 20px 0;">

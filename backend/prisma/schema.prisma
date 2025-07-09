@@ -95,15 +95,15 @@ model Modulos {
   fecha_creacion     DateTime  @default(now())
   fecha_modificacion DateTime  @default(now())
   curso_id           Int       // Changed from String to Int
-  curso              Cursos    @relation(fields: [curso_id], references: [curs_id])
+  curso              Cursos    @relation(fields: [curso_id], references: [curs_id], onDelete: Cascade)
   orden              Int
   contenido           ContenidoModulo[] 
 }
 
 model Recursos {
   rec_id             Int       @id @default(autoincrement())
-  titulo             String    @db.VarChar(100)
-  descripcion        String    @db.VarChar(200)
+  titulo             String?    @db.VarChar(100)
+  descripcion        String?    @db.VarChar(200)
   fecha_creacion     DateTime  @default(now())
   fecha_modificacion DateTime  @default(now())
   url                String    @db.VarChar(255)
@@ -128,7 +128,7 @@ model LeccionVideos {
   id        Int       @id @default(autoincrement())
   lec_id    Int
   video_id  String    @db.VarChar(50) 
-  leccion   Lecciones @relation(fields: [lec_id], references: [lec_id])
+  leccion   Lecciones @relation(fields: [lec_id], references: [lec_id], onDelete: Cascade)
 }
 
 model LeccionArchivos {
@@ -137,15 +137,15 @@ model LeccionArchivos {
   url       String    @db.VarChar(255)
   nombre    String    @db.VarChar(100)
   tipo      String    @db.VarChar(50) 
-  leccion   Lecciones @relation(fields: [lec_id], references: [lec_id])
+  leccion   Lecciones @relation(fields: [lec_id], references: [lec_id], onDelete: Cascade)
 }
 
 model ProgresoContenidoModulo {
   prog_id             Int               @id @default(autoincrement())
   usu_id              Int
-  user                Usuarios          @relation(fields: [usu_id], references: [usu_id])
+  user                Usuarios          @relation(fields: [usu_id], references: [usu_id], onDelete: Cascade)
   contenido_id        Int
-  contenido           ContenidoModulo   @relation(fields: [contenido_id], references: [id])
+  contenido           ContenidoModulo   @relation(fields: [contenido_id], references: [id], onDelete: Cascade)
   completado          Boolean           @default(false)
   fecha_creacion      DateTime          @default(now())
 
@@ -174,7 +174,7 @@ model QuizPreguntas {
   texto_pregunta      String           @db.VarChar(500)
   tipo_pregunta       TipoPregunta
   quiz_id             Int
-  quiz                Quizzes          @relation(fields: [quiz_id], references: [quiz_id])
+  quiz                Quizzes          @relation(fields: [quiz_id], references: [quiz_id], onDelete: Cascade)
   respuestas          QuizRespuestas[]
 }
 
@@ -183,15 +183,15 @@ model QuizRespuestas {
   texto_respuesta     String           @db.VarChar(255)
   correcta            Boolean          @default(false)
   pregunta_id         Int
-  pregunta            QuizPreguntas    @relation(fields: [pregunta_id], references: [pregunta_id])
+  pregunta            QuizPreguntas    @relation(fields: [pregunta_id], references: [pregunta_id], onDelete: Cascade)
 }
 
 model Constancias {
   constancia_id      Int       @id @default(autoincrement())
   usu_id             Int
-  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id])
+  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id], onDelete: Cascade)
   curso_id           Int       // Changed from String to Int
-  curso              Cursos    @relation(fields: [curso_id], references: [curs_id])
+  curso              Cursos    @relation(fields: [curso_id], references: [curs_id], onDelete: Cascade)
   fecha_creacion     DateTime  @default(now())
 
   @@unique([usu_id, curso_id])
@@ -200,13 +200,13 @@ model Constancias {
 model ContenidoModulo {
   id                   Int           @id @default(autoincrement())
   mod_id               Int           
-  modulo               Modulos       @relation(fields: [mod_id], references: [mod_id])
+  modulo               Modulos       @relation(fields: [mod_id], references: [mod_id], onDelete: Cascade)
   orden                Int           
   tipo                 String        @db.VarChar(50)
   lec_id               Int?          @unique
-  leccion              Lecciones?    @relation("LessonContent", fields: [lec_id], references: [lec_id])
+  leccion              Lecciones?    @relation("LessonContent", fields: [lec_id], references: [lec_id], onDelete: Cascade)
   quiz_id              Int?          @unique
-  quiz                 Quizzes?      @relation("QuizContent", fields: [quiz_id], references: [quiz_id])
+  quiz                 Quizzes?      @relation("QuizContent", fields: [quiz_id], references: [quiz_id], onDelete: Cascade)
   fecha_creacion       DateTime      @default(now())
   fecha_modificacion   DateTime      @default(now())
   progresoContenido    ProgresoContenidoModulo[]
@@ -225,9 +225,10 @@ model Categorias_Publicaciones {
 model Publicaciones {
   pub_id             Int       @id @default(autoincrement())
   titulo             String    @db.VarChar(100)
-  contenido          String
+  contenido          Json
   fecha_creacion     DateTime  @default(now())
   fecha_modificacion DateTime  @default(now())
+  fecha_evento       DateTime?                
   cat_pub_id         Int
   categoria          Categorias_Publicaciones @relation(fields: [cat_pub_id], references: [cat_pub_id])
   img_id             Int?
@@ -235,7 +236,7 @@ model Publicaciones {
   recursos_id        Int?
   recurso            Recursos? @relation(fields: [recursos_id], references: [rec_id])
   autor_id           Int
-  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id])
+  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
   visible            Boolean   @default(true)
   destacado          Boolean   @default(false)
 }
@@ -258,7 +259,7 @@ model Hilos_Foros {
   cat_for_id         Int
   categoria          Categorias_Foros @relation(fields: [cat_for_id], references: [cat_for_id])
   autor_id           Int
-  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id])
+  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
   visible            Boolean   @default(true)
   respuestas         Respuestas_Foros[]
 }
@@ -271,7 +272,7 @@ model Respuestas_Foros {
   hilo_id            Int
   hilo               Hilos_Foros @relation(fields: [hilo_id], references: [hilo_id], onDelete: Cascade)
   autor_id           Int
-  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id])
+  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
   visible            Boolean   @default(true)
 }
 
@@ -290,7 +291,7 @@ model Propuestas {
   fecha_creacion     DateTime  @default(now())
   fecha_modificacion DateTime  @default(now())
   autor_id           Int
-  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id])
+  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
   estado             EstadoPropuesta @default(Recibida)
 }
 
@@ -357,7 +358,7 @@ model Ofertas {
 model CVS {
   cv_id              Int       @id @default(autoincrement())
   usu_id             Int
-  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id])
+  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id], onDelete: Cascade)
   fecha_creacion     DateTime  @default(now())
   fecha_modificacion DateTime  @default(now())
   url                String    @db.VarChar(255)

@@ -58,6 +58,8 @@ router.post('/register', async (req, res) => {
             }
         });
 
+        await sendVerificationEmail(email, verificationToken); 
+
           res.status(201).json({
             message: 'Usuario registrado con exito! Por favor verifique su correo',
             status: 'success',
@@ -98,7 +100,7 @@ router.get('/verify-email/:token', async (req, res) => {
                 verificationTokenExpires: null
             }
         });
-        return res.status(200).json({message: 'Email verificado con éxito'});
+        return res.status(200).json({ status: 'success', message: 'Email verificado con éxito'});
     } catch (error) {
         console.error('Email verification error:', error);
         return res.status(500).json({ 
@@ -218,7 +220,11 @@ router.post('/login', async (req, res) => {
 
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
+            sameSite: 'lax', 
+            path: '/',
+            domain: 'localhost',
+            // secure: process.env.NODE_ENV === 'production',
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
