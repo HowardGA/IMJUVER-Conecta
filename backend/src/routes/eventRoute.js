@@ -29,11 +29,16 @@ router.get('/featured', async (req, res) => {
                 autor: true,
             }
         });
-        const baseURL = `${req.protocol}://${req.get('host')}/`;
+        // const baseURL = `${req.protocol}://${req.get('host')}/`;
+        // const featuredAnnouncementsWithURLs = featuredAnnouncements.map((a) => ({
+        //     ...a,
+        //     imagen_url: a.imagen ? `${baseURL}${a.imagen.url}` : null,
+        //     recurso_url: a.recurso ? `${baseURL}${a.recurso.url}` : null,
+        // }));
         const featuredAnnouncementsWithURLs = featuredAnnouncements.map((a) => ({
             ...a,
-            imagen_url: a.imagen ? `${baseURL}${a.imagen.url}` : null,
-            recurso_url: a.recurso ? `${baseURL}${a.recurso.url}` : null,
+            imagen_url: a.imagen ? a.imagen.url : null, // Direct use of ImgBB URL
+            recurso_url: a.recurso ? a.recurso.url : null, // Direct use of ImgBB URL
         }));
         res.status(200).json(featuredAnnouncementsWithURLs);
     } catch (error) {
@@ -259,12 +264,17 @@ console.log('Filters passed to Prisma:', filters);
       }
     });
 
-    const baseURL = `${req.protocol}://${req.get('host')}/`;
+    // const baseURL = `${req.protocol}://${req.get('host')}/`;
 
+    // const announcementsWithURLs = announcements.map((a) => ({
+    // ...a,
+    // imagen_url: a.imagen ? `${baseURL}${a.imagen.url}` : null,
+    // recurso_url: a.recurso ? `${baseURL}${a.recurso.url}` : null,
+    // }));
     const announcementsWithURLs = announcements.map((a) => ({
-    ...a,
-    imagen_url: a.imagen ? `${baseURL}${a.imagen.url}` : null,
-    recurso_url: a.recurso ? `${baseURL}${a.recurso.url}` : null,
+      ...a,
+      imagen_url: a.imagen ? a.imagen.url : null, // Direct use of ImgBB URL
+      recurso_url: a.recurso ? a.recurso.url : null, // Direct use of ImgBB URL
     }));
 console.log('Announcements with URLs:', announcementsWithURLs);
 

@@ -221,7 +221,7 @@ router.post('/login', async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: true,
-            sameSite: 'lax', 
+            sameSite: 'none', 
             path: '/',
             // domain: 'localhost',
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
