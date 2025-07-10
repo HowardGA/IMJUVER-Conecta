@@ -4,6 +4,7 @@ import authenticateToken from '../middleware/authMiddleware.js';
 import uploadMultiple from '../middleware/mixedMulter.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { uploadImageToImgBB } from '../services/imgbbService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,15 +57,15 @@ router.post('/', uploadMultiple, async (req, res) => {
   } = req.body;
     const catPubIdInt = parseInt(cat_pub_id, 10);
     const autorIdInt = parseInt(autor_id, 10);
-  if (!titulo || !contenido || !catPubIdInt || !autorIdInt || !fecha_evento) {
+    const hasImage = req.files && req.files.imagen && req.files.imagen.length > 0;
+    const hasRecurso = req.files && req.files.recurso && req.files.recurso.length > 0;
+
+  if (!titulo || !contenido || !catPubIdInt || !autorIdInt) {
     return res.status(400).json({ message: 'Missing required fields.' });
   }
 
-  if (!req.files?.imagen || !req.files.imagen.length) {
-    return res.status(400).json({ message: 'Imagen es requerida' });
-  }
-  if (!req.files?.recurso || !req.files.recurso.length) {
-    return res.status(400).json({ message: 'Recurso es requerido' });
+  if (!hasImage && !hasRecurso) {
+    return res.status(400).json({ message: 'Se requiere al menos una imagen o un recurso.' });
   }
 
   try {
@@ -72,25 +73,38 @@ router.post('/', uploadMultiple, async (req, res) => {
     const visibleBool = visible === 'true';
     const destacadoBool = destacado === 'true';
     const fechaEventoDate = fecha_evento ? new Date(fecha_evento) : null;
-    const imagenRelativePath = path.relative(rootDir, req.files.imagen[0].path).replace(/\\/g, '/');
-    const recursoRelativePath = path.relative(rootDir, req.files.recurso[0].path).replace(/\\/g, '/');
+    // const imagenRelativePath = path.relative(rootDir, req.files.imagen[0].path).replace(/\\/g, '/');
+    // const recursoRelativePath = path.relative(rootDir, req.files.recurso[0].path).replace(/\\/g, '/');
+    let publicImageUrl = null;
+    let publicResourceUrl = null;
 
+    if (hasImage) {
+      const imageFile = req.files.imagen[0];
+      const imgbbUploadResult = await uploadImageToImgBB(imageFile.buffer, imageFile.originalname);
+      publicImageUrl = imgbbUploadResult.url;
+    }
 
-    const imagen = await prisma.imagenes.create({
-      data: {
-        url: imagenRelativePath,
-        fecha_creacion: new Date(),
-        fecha_modificacion: new Date(),
+    let imagen = null;
+      if (publicImageUrl) {
+          imagen = await prisma.imagenes.create({
+              data: {
+                  url: publicImageUrl,
+                  fecha_creacion: new Date(),
+                  fecha_modificacion: new Date(),
+              }
+          });
       }
-    });
 
-    const recurso = await prisma.recursos.create({
-      data: {
-        url: recursoRelativePath,
-        fecha_creacion: new Date(),
-        fecha_modificacion: new Date(),
+      let recurso = null;
+      if (publicResourceUrl) { 
+          recurso = await prisma.recursos.create({
+              data: {
+                  url: publicResourceUrl,
+                  fecha_creacion: new Date(),
+                  fecha_modificacion: new Date(),
+              }
+          });
       }
-    });
 
     const newAnnouncement = await prisma.publicaciones.create({
     data: {
@@ -98,8 +112,8 @@ router.post('/', uploadMultiple, async (req, res) => {
         contenido,
         cat_pub_id: catPubIdInt,
         autor_id: autorIdInt,
-        img_id: imagen.img_id,
-        recursos_id: recurso.rec_id,
+        img_id: imagen ? imagen.img_id : null,
+        recursos_id: recurso ? recurso.rec_id : null,
         visible: visibleBool,
         destacado: destacadoBool,
         fecha_evento: fechaEventoDate,
