@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Go up two levels to project root, adjust if your file structure differs
 const rootDir = path.resolve(__dirname, '../../');
 
 const combinedStorage = multer.diskStorage({
