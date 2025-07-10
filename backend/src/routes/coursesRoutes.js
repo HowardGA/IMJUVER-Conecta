@@ -5,6 +5,7 @@ import upload from '../middleware/upload.js';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs/promises';
+import { uploadImageToImgBB } from '../services/imgbbService.js';
 
 const router = express.Router();
 const tipoQuiz = 'Cuestionario';
@@ -35,9 +36,12 @@ router.post('/', upload.single('portada'), async (req, res) => {
       return res.status(400).json({ message: 'La imagen portada es requerida',body: req.body });
     }
 
+    const imgbbUpload = await uploadImageToImgBB(req.file.buffer, req.file.originalname);
+    const publicImageUrl = imgbbUpload.url;
+
     const recurso = await prisma.imagenes.create({
       data: {
-        url: req.file.path,
+        url: publicImageUrl, //req.file.path,
         fecha_creacion: new Date(),
         fecha_modificacion: new Date(),
       }
@@ -113,15 +117,15 @@ router.get('/', async (req, res) => {
             }
         });
 
-    const cursosWithPublicUrls = cursos.map(curso => ({
-      ...curso,
-      portada: curso.portada ? {
-        ...curso.portada,
-        url: `${process.env.SERVER_URL || 'http://localhost:3001'}/uploads/${path.basename(curso.portada.url)}`
-      } : null
-    }));
+    // const cursosWithPublicUrls = cursos.map(curso => ({
+    //   ...curso,
+    //   portada: curso.portada ? {
+    //     ...curso.portada,
+    //     url: `${process.env.SERVER_URL || 'http://localhost:3001'}/uploads/${path.basename(curso.portada.url)}`
+    //   } : null
+    // }));
 
-    res.status(200).json(cursosWithPublicUrls);
+    res.status(200).json(cursos);
     } catch (error) {
         res.status(500).json({ message: 'Error al obtener los cursos', error: error.message });
     }
@@ -293,18 +297,18 @@ router.get('/:id/full', async (req, res) => {
       return res.status(404).json({ message: 'Curso no encontrado' });
     }
 
-    const serverUrl = process.env.SERVER_URL || 'http://localhost:3001';
-    const cursoConUrl = {
-      ...curso,
-      portada: curso.portada
-        ? {
-            ...curso.portada,
-            url: `${serverUrl}/uploads/${path.basename(curso.portada.url)}`
-          }
-        : null
-    };
+    // const serverUrl = process.env.SERVER_URL || 'http://localhost:3001';
+    // const cursoConUrl = {
+    //   ...curso,
+    //   portada: curso.portada
+    //     ? {
+    //         ...curso.portada,
+    //         url: `${serverUrl}/uploads/${path.basename(curso.portada.url)}`
+    //       }
+    //     : null
+    // };
 
-    res.status(200).json(cursoConUrl);
+    res.status(200).json(curso);
 
   } catch (error) {
     console.error('Error al obtener curso completo:', error);
