@@ -218,14 +218,28 @@ router.post('/login', async (req, res) => {
             rol_nombre: user.rol?.nombre
         };
 
+        console.log('Attempting to set cookie for user:', user.email);
+        console.log('Cookie token (first 10 chars):', token.substring(0, 10) + '...');
+        console.log('Cookie options:', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            path: '/',
+            maxAge: 24 * 60 * 60 * 1000
+        });
+        console.log('Request Origin (from headers):', req.headers.origin);
+        console.log('Request Protocol:', req.protocol);
+        console.log('Request Host:', req.get('host'));
+
         res.cookie('token', token, {
             httpOnly: true,
             secure: true,
-            sameSite: 'none', 
+            sameSite: 'none',
             path: '/',
-            // domain: 'localhost',
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
+
+        console.log('res.cookie was called. Headers might be set now.'); // This logs that the function was called
 
         return res.json({
             success: true,
