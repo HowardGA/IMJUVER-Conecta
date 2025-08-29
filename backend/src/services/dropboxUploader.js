@@ -40,17 +40,17 @@ export const uploadFileToDropbox = async (fileBuffer, originalname, fieldname) =
   }
 };
 
-export const deleteFileFromDropbox = async (url) => {
+export const deleteFileFromDropbox = async (filePath) => {
   try {
-    const urlParts = url.split('/');
-    const sharedId = urlParts[4];
-    const fileName = urlParts.slice(5).join('/'); 
-    const path = `/${fileName}`; 
-    await dbx.filesGetMetadata({ path });
-    await dbx.filesDeleteV2({ path });
-    console.log(`File deleted from Dropbox at path: ${path}`);
+    const dbx = new Dropbox({ accessToken: process.env.DROPBOX_ACCESS_TOKEN });
+    await dbx.filesDeleteV2({ path: filePath });
+    console.log(`Successfully deleted file from Dropbox: ${filePath}`);
   } catch (error) {
-    console.error('Error deleting file from Dropbox:', error);
-    throw error;
+    if (error.status === 409 && error.error.error_summary.startsWith('path/not_found')) {
+      console.warn(`Warning: File not found in Dropbox, skipping deletion: ${filePath}`);
+    } else {
+      console.error(`Error deleting file from Dropbox: ${error}`);
+      throw error;
+    }
   }
 };
