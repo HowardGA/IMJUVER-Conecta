@@ -297,4 +297,53 @@ router.post('/logout', (req, res) => {
     return res.json({ success: true, message: 'Sesión cerrada exitosamente' });
 });
 
+router.post('/manager', authenticateToken, async (req, res) => {
+    const {
+        nombre,
+        email,
+        password,
+        rol_id,
+        estado = true,
+        apellido = 'Gestor',
+        fecha_nacimiento = new Date(),
+        telefono = '0000000000'
+
+    } = req.body;
+
+    if (!nombre || !email || !password || !rol_id ) {
+        return res.status(400).json({ error: 'Todos los campos requeridos deben ser proporcionados.' });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await prisma.usuarios.create({
+            data: {
+                nombre,
+                apellido,
+                email,
+                password: hashedPassword,
+                rol_id: parseInt(rol_id),
+                estado,
+                fecha_nacimiento,
+                telefono,
+                isVerified: true, 
+                fecha_creacion: new Date(),
+                fecha_modificacion: new Date(),
+            },
+        });
+
+        const { password: userPassword, ...rest } = newUser;
+        res.status(201).json(rest);
+
+    } catch (error) {
+        if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+            return res.status(409).json({ error: 'El correo electrónico ya está registrado.' });
+        }
+        console.error('Error creating manager user:', error);
+        res.status(500).json({ error: 'No se pudo crear el usuario gestor.' });
+    }
+});
+
+
 export default router;

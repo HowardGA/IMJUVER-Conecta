@@ -13,6 +13,7 @@ import courseCrud from './routes/crudCourse.js'
 import annourcementRoutes from './routes/eventRoute.js';
 import ofertasRoutes from './routes/ofertasRoutes.js';
 import directorioRoutes from './routes/directorioRoutes.js';
+import ideaRoutes from './routes/propuestasRoutes.js'
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,7 +23,7 @@ app.use(cookieParser());
 const corsOptions = {
   origin: ['https://imjuver-conecta-next-js.vercel.app','http://localhost:3000'], 
   credentials: true, 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+  methods: ['GET', 'POST', 'PUT', 'PATCH','DELETE'], 
   allowedHeaders: ['Content-Type', 'Authorization'] 
 };
 app.use(cors(corsOptions));
@@ -44,6 +45,7 @@ app.use('/api/course-crud', authenticateToken, courseCrud);
 app.use('/api/announcements', annourcementRoutes);
 app.use('/api/ofertas', ofertasRoutes);
 app.use('/api/directorio', directorioRoutes);
+app.use('/api/propuestas', ideaRoutes);
 
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
@@ -54,4 +56,8 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 })
+app.use((err, req, res, next) => {
+  console.error('GLOBAL ERROR HANDLER:', err);
+  res.status(500).json({ message: 'Global error', error: err.message, stack: err.stack });
+});
 //https://imjuver-conecta-next-js.vercel.app

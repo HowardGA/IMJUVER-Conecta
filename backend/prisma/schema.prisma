@@ -45,10 +45,10 @@ model Usuarios {
   progresoCurso      ProgresoContenidoModulo[]
   constancias        Constancias[]
   publicaciones      Publicaciones[]
-  hilosForos         Hilos_Foros[]
-  respuestasForos    Respuestas_Foros[]
-  propuestas         Propuestas[]
+  propuestas         Idea[]
   cvs                CVS[]
+  comentarios        ComentarioIdea[]
+  likes              LikeIdea[]
 }
 
 model Categorias_Cursos {
@@ -66,8 +66,8 @@ model Imagenes {
   fecha_creacion     DateTime  @default(now())
   fecha_modificacion DateTime  @default(now())
   cursos             Cursos[]  @relation("Portada")
-  publicaciones      Publicaciones[]
   eventos            Eventos[]
+  publicacionImagenes PublicacionImagen[]
 }
 
 model Cursos {
@@ -108,7 +108,7 @@ model Recursos {
   fecha_modificacion DateTime  @default(now())
   url                String    @db.VarChar(255)
   lecciones          Lecciones[]
-  publicaciones      Publicaciones[]
+  publicacionRecursos PublicacionRecurso[]
 }
 
 model Lecciones {
@@ -231,49 +231,28 @@ model Publicaciones {
   fecha_evento       DateTime?                
   cat_pub_id         Int
   categoria          Categorias_Publicaciones @relation(fields: [cat_pub_id], references: [cat_pub_id])
-  img_id             Int?
-  imagen             Imagenes? @relation(fields: [img_id], references: [img_id])
-  recursos_id        Int?
-  recurso            Recursos? @relation(fields: [recursos_id], references: [rec_id])
   autor_id           Int
   autor              Usuarios  @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
   visible            Boolean   @default(true)
   destacado          Boolean   @default(false)
+  publicacionImagenes PublicacionImagen[]
+  publicacionRecursos PublicacionRecurso[]
 }
 
-model Categorias_Foros {
-  cat_for_id         Int       @id @default(autoincrement())
-  nombre             String    @db.VarChar(50)
-  descripcion        String
-  fecha_creacion     DateTime  @default(now())
-  fecha_modificacion DateTime  @default(now())
-  hilosForos         Hilos_Foros[]
+model PublicacionImagen {
+  publicacion_id Int
+  imagen_id      Int
+  publicacion    Publicaciones @relation(fields: [publicacion_id], references: [pub_id], onDelete: Cascade)
+  imagen         Imagenes      @relation(fields: [imagen_id], references: [img_id])
+  @@id([publicacion_id, imagen_id])
 }
 
-model Hilos_Foros {
-  hilo_id            Int       @id @default(autoincrement())
-  titulo             String    @db.VarChar(100)
-  contenido          String
-  fecha_creacion     DateTime  @default(now())
-  fecha_modificacion DateTime  @default(now())
-  cat_for_id         Int
-  categoria          Categorias_Foros @relation(fields: [cat_for_id], references: [cat_for_id])
-  autor_id           Int
-  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
-  visible            Boolean   @default(true)
-  respuestas         Respuestas_Foros[]
-}
-
-model Respuestas_Foros {
-  resp_id            Int       @id @default(autoincrement())
-  contenido          String
-  fecha_creacion     DateTime  @default(now())
-  fecha_modificacion DateTime  @default(now())
-  hilo_id            Int
-  hilo               Hilos_Foros @relation(fields: [hilo_id], references: [hilo_id], onDelete: Cascade)
-  autor_id           Int
-  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
-  visible            Boolean   @default(true)
+model PublicacionRecurso {
+  publicacion_id Int
+  recurso_id     Int
+  publicacion    Publicaciones @relation(fields: [publicacion_id], references: [pub_id], onDelete: Cascade)
+  recurso        Recursos      @relation(fields: [recurso_id], references: [rec_id])
+  @@id([publicacion_id, recurso_id])
 }
 
 enum EstadoPropuesta {
@@ -284,15 +263,41 @@ enum EstadoPropuesta {
   Implementada
 }
 
-model Propuestas {
-  prop_id            Int       @id @default(autoincrement())
-  titulo             String    @db.VarChar(100)
+model Idea {
+  idea_id            Int            @id @default(autoincrement())
+  titulo             String         @db.VarChar(100)
   contenido          String
-  fecha_creacion     DateTime  @default(now())
-  fecha_modificacion DateTime  @default(now())
+  fecha_creacion     DateTime       @default(now())
+  fecha_modificacion DateTime       @default(now())
   autor_id           Int
-  autor              Usuarios  @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
-  estado             EstadoPropuesta @default(Recibida)
+  autor              Usuarios       @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
+  estado             EstadoPropuesta     @default(Recibida) 
+  is_public          Boolean        @default(false)   
+  visible            Boolean        @default(true)   
+  likes              LikeIdea[]     
+  comentarios        ComentarioIdea[] 
+}
+
+model LikeIdea {
+  like_id            Int            @id @default(autoincrement())
+  idea_id            Int
+  idea               Idea           @relation(fields: [idea_id], references: [idea_id], onDelete: Cascade)
+  usuario_id         Int
+  usuario            Usuarios       @relation(fields: [usuario_id], references: [usu_id], onDelete: Cascade)
+  fecha_creacion     DateTime       @default(now())
+  @@unique([idea_id, usuario_id]) 
+}
+
+model ComentarioIdea {
+  comentario_id      Int            @id @default(autoincrement())
+  contenido          String         @db.VarChar(500) // Adjust length as needed
+  fecha_creacion     DateTime       @default(now())
+  fecha_modificacion DateTime       @default(now())
+  idea_id            Int
+  idea               Idea           @relation(fields: [idea_id], references: [idea_id], onDelete: Cascade)
+  autor_id           Int
+  autor              Usuarios       @relation(fields: [autor_id], references: [usu_id], onDelete: Cascade)
+  visible            Boolean        @default(true)
 }
 
 model Eventos {
@@ -345,7 +350,7 @@ model Categorias_Ofertas {
 model Ofertas {
   of_id              Int       @id @default(autoincrement())
   titulo             String    @db.VarChar(100)
-  descripcion        String
+  descripcion        String    @db.Text
   fecha_creacion     DateTime  @default(now())
   fecha_modificacion DateTime  @default(now())
   cat_of_id          Int
@@ -353,14 +358,8 @@ model Ofertas {
   url                String?   @db.VarChar(255)
   fecha_vigencia     DateTime
   activo             Boolean   @default(true)
+  mujer              Boolean   @default(false)
 }
 
-model CVS {
-  cv_id              Int       @id @default(autoincrement())
-  usu_id             Int
-  usuario            Usuarios  @relation(fields: [usu_id], references: [usu_id], onDelete: Cascade)
-  fecha_creacion     DateTime  @default(now())
-  fecha_modificacion DateTime  @default(now())
-  url                String    @db.VarChar(255)
-}
+
 

@@ -5,18 +5,14 @@ import upload from '../middleware/upload.js';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs/promises';
-import { uploadImageToImgBB } from '../services/imgbbService.js';
+import { uploadFileToDropbox, deleteFileFromDropbox } from '../services/dropboxUploader.js';
+
 
 const router = express.Router();
 const tipoQuiz = 'Cuestionario';
 
 //save a course
 router.post('/', upload.single('portada'), async (req, res) => {
-  console.log('--- Course Creation Request ---');
-  console.log('req.body:', req.body);
-  console.log('req.file:', req.file);
-  console.log('--- End Request Log ---');
-
   try {
     const { titulo, descripcion, cat_cursos_id, duracion, nivel, modulos } = req.body;
     if (!titulo || !descripcion || !cat_cursos_id || !duracion || !nivel) {
@@ -35,13 +31,12 @@ router.post('/', upload.single('portada'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: 'La imagen portada es requerida',body: req.body });
     }
-
-    const imgbbUpload = await uploadImageToImgBB(req.file.buffer, req.file.originalname);
-    const publicImageUrl = imgbbUpload.url;
+    // const relativePath = path.join('uploads', path.basename(req.file.path));
+    const dropboxUrl = await uploadFileToDropbox(req.file.buffer, req.file.originalname, 'portada');
 
     const recurso = await prisma.imagenes.create({
       data: {
-        url: publicImageUrl, //req.file.path,
+        url:  dropboxUrl, //relativePath,
         fecha_creacion: new Date(),
         fecha_modificacion: new Date(),
       }
@@ -84,25 +79,44 @@ router.post('/', upload.single('portada'), async (req, res) => {
   }
 });
 
-//delete a course
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const curso = await prisma.cursos.findUnique({
-            where: { curs_id: parseInt(id) }
-        });
+        const cursoId = parseInt(id);
 
-        if (!curso) {
-            return res.status(404).json({ message: 'Curso no encontrado' });
+        if (isNaN(cursoId)) {
+            return res.status(400).json({ message: 'ID de curso inválido.' });
         }
 
-        await prisma.cursos.delete({
-            where: { curs_id: parseInt(id) }
+        const courseToDelete = await prisma.cursos.findUnique({
+            where: { curs_id: cursoId },
+            include: {
+                portada: true, 
+            },
         });
 
-        res.status(200).json({ message: 'Curso eliminado exitosamente' });
+        if (!courseToDelete) {
+            return res.status(404).json({ message: 'Curso no encontrado.' });
+        }
+        if (courseToDelete.portada && courseToDelete.portada.url) {
+            await deleteFileFromDropbox(courseToDelete.portada.url);
+        }
+
+        if (courseToDelete.portada_id) {
+            await prisma.imagenes.delete({
+                where: { img_id: courseToDelete.portada_id },
+            });
+        }
+                await prisma.cursos.delete({
+            where: { curs_id: cursoId },
+        });
+        res.status(200).json({ message: 'Curso y portada eliminados exitosamente.' });
     } catch (error) {
-        res.status(500).json({ message: 'Error al eliminar el curso' });
+        console.error('Error al eliminar el curso:', error);
+        res.status(500).json({ 
+            message: 'Error al eliminar el curso',
+            error: error.message,
+        });
     }
 });
 
@@ -125,7 +139,7 @@ router.get('/', async (req, res) => {
     //   } : null
     // }));
 
-    res.status(200).json(cursos);
+    res.status(200).json(cursos); //aqui iria cursosWithPublicUrls
     } catch (error) {
         res.status(500).json({ message: 'Error al obtener los cursos', error: error.message });
     }
@@ -144,6 +158,16 @@ router.post('/lessons', uploadFiles.array('archivos'), async (req, res) => {
     });
 
     const newOrden = (maxOrdenContenido._max.orden || 0) + 1;
+
+    // esto se utiliza para subir los archivos a dropbox
+    let fileUploadPromises = [];
+    if (uploadedFiles?.length > 0) {
+      fileUploadPromises = uploadedFiles.map(file => {
+        return uploadFileToDropbox(file.buffer, file.originalname, 'leccion-archivos');
+      });
+    }
+
+    const fileUrls = await Promise.all(fileUploadPromises);
 
     const result = await prisma.$transaction(async (prismaTx) => {
       const lesson = await prismaTx.lecciones.create({
@@ -168,7 +192,7 @@ router.post('/lessons', uploadFiles.array('archivos'), async (req, res) => {
         await prismaTx.leccionArchivos.createMany({
           data: uploadedFiles.map(file => ({ 
             lec_id: lesson.lec_id,
-            url: `/uploads/files/${file.filename}`,
+            url:  fileUrls[index],//`/uploads/files/${file.filename}`,
             nombre: file.originalname,
             tipo: file.mimetype
           }))
@@ -244,15 +268,36 @@ router.get('/lessons/:id', async (req, res) => {
       where: { lec_id: lessonId },
       include: {
         videos: true, 
-        archivos: true 
+        archivos: true,
+        contenidoModulo: {
+          select: {
+            modulo: {
+              select: {
+                curso_id: true,
+              }
+            }
+          }
+        }
       }
     });
 
     if (!lesson) {
       return res.status(404).json({ message: 'Lección no encontrada' });
     }
-
-    res.json(lesson);
+    const extractedCourseId = lesson.contenidoModulo?.modulo?.curso_id || null;
+    const responseLesson = {
+      lec_id: lesson.lec_id,
+      titulo: lesson.titulo,
+      fecha_creacion: lesson.fecha_creacion,
+      fecha_modificacion: lesson.fecha_modificacion,
+      contenido: lesson.contenido,
+      recurso_id: lesson.recurso_id,
+      videos: lesson.videos,
+      archivos: lesson.archivos,
+      curso_id: extractedCourseId,
+    };
+    console.log(responseLesson)
+    res.json(responseLesson);
   } catch (error) {
     console.error('Error fetching lesson:', error);
     res.status(500).json({ message: 'Error al obtener la lección' });
@@ -296,7 +341,7 @@ router.get('/:id/full', async (req, res) => {
     if (!curso) {
       return res.status(404).json({ message: 'Curso no encontrado' });
     }
-
+    // comentadao porque tomamos de dropbox
     // const serverUrl = process.env.SERVER_URL || 'http://localhost:3001';
     // const cursoConUrl = {
     //   ...curso,
@@ -433,16 +478,26 @@ router.get('/quiz/:quiz_id', async (req, res) => {
     }
 
     try {
-        const quiz = await prisma.quizzes.findUnique({
+        const quizData = await prisma.quizzes.findUnique({ // Use quizData to avoid conflict
             where: { quiz_id: quiz_id },
             include: {
                 preguntas: {
                     include: {
                         respuestas: {
-                            select: { 
+                            select: {
                                 respuesta_id: true,
                                 texto_respuesta: true,
                                 correcta: true,
+                            }
+                        }
+                    }
+                },
+                contenidoModulo: { 
+                    select: {
+                        modulo: { 
+                            select: {
+                                curso_id: true,
+                                titulo: true 
                             }
                         }
                     }
@@ -450,11 +505,16 @@ router.get('/quiz/:quiz_id', async (req, res) => {
             }
         });
 
-        if (!quiz) {
+        if (!quizData) {
             return res.status(404).json({ message: 'Quiz not found' });
         }
+        const extractedCourseId = quizData.contenidoModulo?.modulo?.curso_id || null;
+        const responseQuiz = {
+            ...quizData, 
+            curso_id: extractedCourseId, 
+        };
 
-        res.status(200).json(quiz);
+        res.status(200).json(responseQuiz);
 
     } catch (error) {
         console.error('Error fetching quiz:', error);
@@ -540,8 +600,114 @@ router.post('/quiz/:quiz_id/submit', async (req, res) => {
         res.status(500).json({ message: 'Error submitting quiz' });
     }
 });
-const __dirname = path.resolve();
-const storagePath = path.join(__dirname, 'uploads/files');
+
+//comentado porque eso se usa localmente
+// const __dirname = path.resolve();
+// const storagePath = path.join(__dirname, 'uploads/files');
+
+// router.put('/lessons/:id', uploadFiles.array('archivos'), async (req, res) => {
+//   try {
+//     const { id } = req.params; 
+//     const lessonId = parseInt(id);
+//     const { titulo, contenido, youtube_videos, existing_files } = req.body;
+//     const uploadedFiles = req.files; 
+//     const parsedContenido = JSON.parse(contenido);
+//     const parsedYoutubeVideos = JSON.parse(youtube_videos);
+//     const parsedExistingFiles = JSON.parse(existing_files);
+//     const result = await prisma.$transaction(async (prismaTx) => {
+//       const updatedLesson = await prismaTx.lecciones.update({
+//         where: { lec_id: lessonId },
+//         data: {
+//           titulo,
+//           contenido: parsedContenido,
+//           fecha_modificacion: new Date(),
+//         },
+//       });
+//       if (!updatedLesson) {
+//         return res.status(404).json({ message: 'Lección no encontrada para actualizar.' });
+//       }
+//       await prismaTx.leccionVideos.deleteMany({
+//         where: {
+//           lec_id: lessonId,
+//           video_id: {
+//             notIn: parsedYoutubeVideos, 
+//           },
+//         },
+//       });
+//       const currentVideoRecords = await prismaTx.leccionVideos.findMany({
+//         where: { lec_id: lessonId },
+//         select: { video_id: true }
+//       });
+//       const currentVideoIds = new Set(currentVideoRecords.map(v => v.video_id));
+//       const videosToAdd = parsedYoutubeVideos.filter(
+//         (video_id) => !currentVideoIds.has(video_id)
+//       );
+//       if (videosToAdd.length > 0) {
+//         await prismaTx.leccionVideos.createMany({
+//           data: videosToAdd.map(video => ({
+//             lec_id: lessonId,
+//             video_id: video,
+//           })),
+//           skipDuplicates: true 
+//         });
+//       }
+//       const existingFileIdsToKeep = new Set(parsedExistingFiles.map(file => file.id)); 
+//       const filesToDelete = await prismaTx.leccionArchivos.findMany({
+//         where: {
+//           lec_id: lessonId,
+//           id: {
+//             notIn: Array.from(existingFileIdsToKeep),
+//           },
+//         },
+//         select: { url: true, id: true } 
+//       });
+//       await prismaTx.leccionArchivos.deleteMany({
+//         where: {
+//           id: {
+//             in: filesToDelete.map(f => f.id)
+//           }
+//         }
+//       });
+//       for (const fileRecord of filesToDelete) {
+//         try {
+//           const filename = path.basename(fileRecord.url);
+//           const filePath = path.join(storagePath, filename);
+//           await fs.unlink(filePath);
+//           console.log(`Deleted file from filesystem: ${filePath}`);
+//         } catch (fileErr) {
+//           console.warn(`Could not delete file ${fileRecord.url} from filesystem:`, fileErr);
+//         }
+//       }
+
+//       if (uploadedFiles && uploadedFiles.length > 0) {
+//         await prismaTx.leccionArchivos.createMany({
+//           data: uploadedFiles.map(file => ({
+//             lec_id: lessonId,
+//             url: `/uploads/files/${file.filename}`, // Ensure this path is correct
+//             nombre: file.originalname,
+//             tipo: file.mimetype,
+//           })),
+//         });
+//       }
+//       // Return the updated lesson
+//       return updatedLesson;
+//     });
+
+//     res.status(200).json({
+//       message: 'Lección actualizada exitosamente',
+//       lesson: result // The updated lesson object
+//     });
+
+//   } catch (error) {
+//     console.error('Error updating lesson:', error);
+//     if (error instanceof multer.MulterError) {
+//       console.error('Multer Error Code:', error.code);
+//       console.error('Multer Error Field Name:', error.field);
+//     }
+//     res.status(500).json({ message: 'Error al actualizar la lección' });
+//   }
+// });
+
 router.put('/lessons/:id', uploadFiles.array('archivos'), async (req, res) => {
   try {
     const { id } = req.params; 
@@ -551,6 +717,7 @@ router.put('/lessons/:id', uploadFiles.array('archivos'), async (req, res) => {
     const parsedContenido = JSON.parse(contenido);
     const parsedYoutubeVideos = JSON.parse(youtube_videos);
     const parsedExistingFiles = JSON.parse(existing_files);
+
     const result = await prisma.$transaction(async (prismaTx) => {
       const updatedLesson = await prismaTx.lecciones.update({
         where: { lec_id: lessonId },
@@ -560,6 +727,7 @@ router.put('/lessons/:id', uploadFiles.array('archivos'), async (req, res) => {
           fecha_modificacion: new Date(),
         },
       });
+
       if (!updatedLesson) {
         return res.status(404).json({ message: 'Lección no encontrada para actualizar.' });
       }
@@ -598,6 +766,7 @@ router.put('/lessons/:id', uploadFiles.array('archivos'), async (req, res) => {
         },
         select: { url: true, id: true } 
       });
+      await Promise.all(filesToDelete.map(fileRecord => deleteFileFromDropbox(fileRecord.url)));
       await prismaTx.leccionArchivos.deleteMany({
         where: {
           id: {
@@ -605,42 +774,31 @@ router.put('/lessons/:id', uploadFiles.array('archivos'), async (req, res) => {
           }
         }
       });
-      for (const fileRecord of filesToDelete) {
-        try {
-          const filename = path.basename(fileRecord.url);
-          const filePath = path.join(storagePath, filename);
-          await fs.unlink(filePath);
-          console.log(`Deleted file from filesystem: ${filePath}`);
-        } catch (fileErr) {
-          console.warn(`Could not delete file ${fileRecord.url} from filesystem:`, fileErr);
-        }
-      }
-
       if (uploadedFiles && uploadedFiles.length > 0) {
+        const fileUploadPromises = uploadedFiles.map(file => 
+          uploadFileToDropbox(file.buffer, file.originalname, 'leccion-archivos')
+        );
+        const uploadedFileUrls = await Promise.all(fileUploadPromises);
+
         await prismaTx.leccionArchivos.createMany({
-          data: uploadedFiles.map(file => ({
+          data: uploadedFiles.map((file, index) => ({
             lec_id: lessonId,
-            url: `/uploads/files/${file.filename}`, // Ensure this path is correct
+            url: uploadedFileUrls[index], 
             nombre: file.originalname,
             tipo: file.mimetype,
           })),
         });
       }
-      // Return the updated lesson
       return updatedLesson;
     });
 
     res.status(200).json({
       message: 'Lección actualizada exitosamente',
-      lesson: result // The updated lesson object
+      lesson: result
     });
 
   } catch (error) {
     console.error('Error updating lesson:', error);
-    if (error instanceof multer.MulterError) {
-      console.error('Multer Error Code:', error.code);
-      console.error('Multer Error Field Name:', error.field);
-    }
     res.status(500).json({ message: 'Error al actualizar la lección' });
   }
 });
@@ -789,6 +947,32 @@ router.delete('/quiz/:id', async (req, res) => {
     }
 });
 
+// router.delete('/lesson/:id', async (req, res) => {
+//     const { id } = req.params;
+//     const lessonId = parseInt(id);
+//     if (isNaN(lessonId)) {
+//         return res.status(400).json({ message: 'ID de lección inválido.' });
+//     }
+//     try {
+//         const existingLesson = await prisma.lecciones.findUnique({
+//             where: { lec_id: lessonId },
+//         });
+//         if (!existingLesson) {
+//             return res.status(404).json({ message: 'Lección no encontrada.' });
+//         }
+//         await prisma.lecciones.delete({
+//             where: { lec_id: lessonId },
+//         });
+//         res.status(200).json({ message: 'Lección eliminada con éxito.' });
+//     } catch (error) {
+//         console.error('Error al eliminar la lección:', error);
+//         if (error.code === 'P2025') {
+//             return res.status(404).json({ message: 'Lección no encontrada.' });
+//         }
+//         res.status(500).json({ message: 'Error interno del servidor al eliminar la lección.', error: error.message });
+//     }
+// });
+//borrar con dropbox
 router.delete('/lesson/:id', async (req, res) => {
     const { id } = req.params;
     const lessonId = parseInt(id);
@@ -796,16 +980,31 @@ router.delete('/lesson/:id', async (req, res) => {
         return res.status(400).json({ message: 'ID de lección inválido.' });
     }
     try {
-        const existingLesson = await prisma.lecciones.findUnique({
+        const filesToDelete = await prisma.leccionArchivos.findMany({
             where: { lec_id: lessonId },
+            select: { url: true }
         });
-        if (!existingLesson) {
-            return res.status(404).json({ message: 'Lección no encontrada.' });
+        if (filesToDelete.length > 0) {
+            await Promise.all(
+                filesToDelete.map(file => deleteFileFromDropbox(file.url))
+            );
         }
-        await prisma.lecciones.delete({
-            where: { lec_id: lessonId },
+        await prisma.$transaction(async (prismaTx) => {
+            await prismaTx.leccionArchivos.deleteMany({
+                where: { lec_id: lessonId },
+            });
+            await prismaTx.leccionVideos.deleteMany({
+                where: { lec_id: lessonId },
+            });
+            await prismaTx.contenidoModulo.deleteMany({
+                where: { lec_id: lessonId },
+            });
+            await prismaTx.lecciones.delete({
+                where: { lec_id: lessonId },
+            });
         });
-        res.status(200).json({ message: 'Lección eliminada con éxito.' });
+
+        res.status(200).json({ message: 'Lección y archivos asociados eliminados con éxito.' });
     } catch (error) {
         console.error('Error al eliminar la lección:', error);
         if (error.code === 'P2025') {

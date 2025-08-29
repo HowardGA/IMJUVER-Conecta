@@ -1,12 +1,21 @@
 import { Router } from 'express';
 import prisma from '../prismaClient.js';
+import { sendNotificationToRole } from '../services/emailService.js';
 const router = Router();
 
 // Create a new job offering
 router.post('/', async (req, res) => {
   try {
-    const { titulo, descripcion, cat_of_id, url, fecha_vigencia, activo } = req.body;
-
+    const { titulo, descripcion, cat_of_id, url, fecha_vigencia, activo, mujer } = req.body;
+    let categoryName = 'una nueva oferta';
+    if (cat_of_id) {
+        const category = await prisma.categorias_Ofertas.findUnique({
+            where: { cat_of_id: Number(cat_of_id) }
+        });
+        if (category) {
+            categoryName = category.nombre;
+        }
+    }
     const oferta = await prisma.ofertas.create({
       data: {
         titulo,
@@ -14,9 +23,59 @@ router.post('/', async (req, res) => {
         cat_of_id,
         url,
         fecha_vigencia: new Date(fecha_vigencia),
-        activo: activo ?? true, 
+        activo: activo ?? true,
+        mujer: mujer ?? false
       },
     });
+    const youngPeopleRoleId = 2; 
+    const notificationSubject = `¡Nueva Oportunidad de Empleo en ${oferta.titulo}!`;
+    const notificationMessage = `
+        ¡Atención joven! Se ha publicado una nueva oferta de empleo en IMJUVER Conecta: <strong>"${oferta.titulo}"</strong>.
+        <br><br>
+        Esta oportunidad podría ser justo lo que estás buscando, bajo la categoría de <strong>${categoryName}</strong>.
+        ¡No la dejes pasar!
+    `;
+    const buttonText = 'Ver Oferta de Empleo';
+    const ofertaUrl = `${process.env.BASE_URL}/jobs`;
+
+    // Send the notification to all young people
+    sendNotificationToRole(
+      youngPeopleRoleId,
+      notificationSubject,
+      notificationMessage,
+      buttonText,
+      ofertaUrl
+    ).then(result => {
+      console.log('Notification for new job offering initiated:', result);
+    }).catch(err => {
+      console.error('Failed to initiate notification for new job offering:', err);
+    });
+
+    // --- Optional: Send specific notification if it's an offer for women ---
+    if (oferta.mujer) {
+        // You might have a specific role for women, or just send a more targeted message
+        // For simplicity, we'll send it to the same group (Role 2) with a slightly different message
+        const womenSpecificSubject = `¡Oportunidad de Empleo Exclusiva para Mujeres: "${oferta.titulo}"!`;
+        const womenSpecificMessage = `
+            ¡Atención joven! Se ha publicado una nueva oferta de empleo en IMJUVER Conecta: <strong>"${oferta.titulo}"</strong>, diseñada especialmente para mujeres.
+            <br><br>
+            Explora esta oportunidad única bajo la categoría de <strong>${categoryName}</strong>. ¡Tu futuro te espera!
+        `;
+        // Re-use buttonText and ofertaUrl
+
+        sendNotificationToRole(
+            youngPeopleRoleId, // Still sending to role 2, but with a specific message
+            womenSpecificSubject,
+            womenSpecificMessage,
+            buttonText,
+            ofertaUrl
+        ).then(result => {
+            console.log('Specific notification for women job offering initiated:', result);
+        }).catch(err => {
+            console.error('Failed to initiate specific notification for women job offering:', err);
+        });
+    }
+    // --- End Optional Notification ---
 
     res.status(201).json(oferta);
   } catch (error) {

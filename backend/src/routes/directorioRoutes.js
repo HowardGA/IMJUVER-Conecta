@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import prisma from '../prismaClient.js';
+import { sendNotificationToRole } from '../services/emailService.js';
 
 const router = Router();
 
@@ -47,13 +48,42 @@ router.get('/single/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const data = req.body;
+    let categoryName = 'una nueva categoría';
+    if (data.cat_dir_id) {
+        const category = await prisma.categorias_Directorio.findUnique({
+            where: { cat_dir_id: Number(data.cat_dir_id) }
+        });
+        if (category) {
+            categoryName = category.nombre;
+        }
+    }
+
     const directorio = await prisma.directorio.create({
       data: {
         ...data,
         cat_dir_id: Number(data.cat_dir_id),
       },
     });
-
+    const youngPeopleRoleId = 2; 
+    const notificationSubject = `¡Nuevo Contacto en el Directorio de IMJUVER Conecta!`;
+    const notificationMessage = `
+        ¡Atención joven! Se ha añadido un nuevo contacto en el Directorio de IMJUVER Conecta bajo la categoría de <strong>${categoryName}</strong>.
+        <br><br>
+        Ahora tienes acceso a más recursos importantes. ¡Revísalo para descubrir de qué se trata!
+    `;
+    const buttonText = 'Explorar Directorio';
+    const directoryUrl = `/directory`;
+    sendNotificationToRole(
+      youngPeopleRoleId,
+      notificationSubject,
+      notificationMessage,
+      buttonText,
+      directoryUrl
+    ).then(result => {
+      console.log('Notification for new directory entry initiated:', result);
+    }).catch(err => {
+      console.error('Failed to initiate notification for new directory entry:', err);
+    });
     res.status(201).json(directorio);
   } catch (error) {
     console.error('Error creating directory entry:', error);

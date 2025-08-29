@@ -305,7 +305,7 @@ router.get('/course/:id/percentage', async (req, res) => {
 });
 
 router.get('/next/:contenidoId', async (req, res) => {
-  const userId = req.user.usu_id;
+  const userId = req.user.usu_id; // Assuming req.user is populated by middleware
   const currentContenidoId = parseInt(req.params.contenidoId);
 
   try {
@@ -324,6 +324,7 @@ router.get('/next/:contenidoId', async (req, res) => {
     const currentOrden = currentContent.orden;
     const cursoId = currentContent.modulo.curso_id;
 
+    // --- CASE 1: Find next content in the SAME module ---
     const nextInSameModule = await prisma.contenidoModulo.findFirst({
       where: {
         mod_id: currentContent.mod_id,
@@ -338,6 +339,13 @@ router.get('/next/:contenidoId', async (req, res) => {
         modulo: {
           select: { titulo: true },
         },
+        // *** ADD THESE INCLUDES ***
+        leccion: {
+            select: { lec_id: true } // Select the actual lesson ID
+        },
+        quiz: {
+            select: { quiz_id: true } // Select the actual quiz ID
+        }
       },
     });
 
@@ -348,9 +356,14 @@ router.get('/next/:contenidoId', async (req, res) => {
         orden: nextInSameModule.orden,
         tipo: nextInSameModule.tipo,
         titulo: nextInSameModule.modulo?.titulo,
+        // *** RETURN THE IDs BASED ON TYPE ***
+        leccionId: nextInSameModule.leccion?.lec_id || null, // Ensure to return null if not a lesson
+        quizId: nextInSameModule.quiz?.quiz_id || null,     // Ensure to return null if not a quiz
+        fin: false // Explicitly state not the end
       });
     }
 
+    // --- CASE 2: Find next module in the SAME course ---
     const nextModule = await prisma.modulos.findFirst({
       where: {
         curso_id: cursoId,
@@ -364,6 +377,7 @@ router.get('/next/:contenidoId', async (req, res) => {
     });
 
     if (nextModule) {
+      // Find the first content in the next module
       const firstInNextModule = await prisma.contenidoModulo.findFirst({
         where: {
           mod_id: nextModule.mod_id,
@@ -375,6 +389,13 @@ router.get('/next/:contenidoId', async (req, res) => {
           modulo: {
             select: { titulo: true },
           },
+          // *** ADD THESE INCLUDES ***
+          leccion: {
+              select: { lec_id: true } // Select the actual lesson ID
+          },
+          quiz: {
+              select: { quiz_id: true } // Select the actual quiz ID
+          }
         },
       });
 
@@ -385,14 +406,19 @@ router.get('/next/:contenidoId', async (req, res) => {
           orden: firstInNextModule.orden,
           tipo: firstInNextModule.tipo,
           titulo: firstInNextModule.modulo?.titulo,
+          // *** RETURN THE IDs BASED ON TYPE ***
+          leccionId: firstInNextModule.leccion?.lec_id || null,
+          quizId: firstInNextModule.quiz?.quiz_id || null,
+          fin: false // Explicitly state not the end
         });
       }
     }
 
+    // --- CASE 3: No more content/modules found (End of course) ---
     return res.status(200).json({ message: 'Fin del curso', fin: true });
 
   } catch (error) {
-    console.error(error);
+    console.error('Error fetching next content:', error); // More specific error logging
     res.status(500).json({ message: 'Error obteniendo el siguiente contenido' });
   }
 });
