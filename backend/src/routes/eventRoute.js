@@ -333,7 +333,7 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
             }
         });
 
-        await Promise.all(filesToDelete.map(url => deleteFileFromDropbox(url)));
+        //await Promise.all(filesToDelete.map(url => deleteFileFromDropbox(url)));
 
         const deletedAnnouncement = await prisma.publicaciones.delete({
             where: { pub_id: pubId },
