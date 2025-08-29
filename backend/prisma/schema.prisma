@@ -46,7 +46,6 @@ model Usuarios {
   constancias        Constancias[]
   publicaciones      Publicaciones[]
   propuestas         Idea[]
-  cvs                CVS[]
   comentarios        ComentarioIdea[]
   likes              LikeIdea[]
 }
